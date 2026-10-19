@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [modernize, master]
+    branches: [modernize]
   pull_request:
   workflow_dispatch:
 
