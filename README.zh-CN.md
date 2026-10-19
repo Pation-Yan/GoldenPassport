@@ -98,7 +98,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 # 安装
 
 > [!IMPORTANT]
-> **目前还没有发布安装包。** 第一个正式版会在原作者确认开源协议（[#33](https://github.com/stanzhai/GoldenPassport/issues/33)）、并完成 Apple 公证后发布。在那之前，请按下面的步骤从源码构建，得到的安装包和正式版内容相同。
+> **目前还没有发布安装包。** 第一个正式版会在完成 Apple 公证后发布。在那之前，请按下面的步骤从源码构建，得到的安装包和正式版内容相同。
 
 > [!NOTE]
 > 目前的安装包**还没有经过 Apple 公证**，从网上下载后直接打开会被 macOS 拦截。下面的安装脚本会帮你处理好。Apple 公证和 Homebrew cask 都在[后续计划](#后续计划)中。现在执行 `brew install --cask goldenpassport` 装的是旧版 0.1.7，而且这个 cask 已被 Homebrew 禁用。
@@ -216,7 +216,7 @@ make beta      # 通用版 + install.sh / rollback.sh / 测试说明，打包为
 
 GoldenPassport 由 [StanZhai](https://github.com/stanzhai) 于 2017 年创建，本 fork 由 [thatscode](https://github.com/thatscode) 维护。
 
-原仓库没有附带开源协议。我们已经在 [stanzhai/GoldenPassport#33](https://github.com/stanzhai/GoldenPassport/issues/33) 中请作者补充，作者添加后本 fork 会采用相同的协议。
+本项目采用 [MIT 协议](LICENSE)，继承自原项目：原作者应我们在 [stanzhai/GoldenPassport#33](https://github.com/stanzhai/GoldenPassport/issues/33) 中的请求补充了这份协议，随后将原仓库归档，并推荐用户改用本 fork。
 
 # 参考资料
 

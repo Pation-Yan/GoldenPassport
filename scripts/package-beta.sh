@@ -17,6 +17,7 @@ mkdir -p "$STAGE"
 ditto "$BUILD_ROOT/release/GoldenPassport.app" "$STAGE/GoldenPassport.app"
 cp "$ROOT/scripts/install.sh" "$ROOT/scripts/rollback.sh" "$ROOT/scripts/cleanup.sh" "$STAGE/"
 cp "$ROOT/docs/beta-testing.md" "$STAGE/测试说明.md"
+cp "$ROOT/LICENSE" "$STAGE/"
 chmod +x "$STAGE/install.sh" "$STAGE/rollback.sh" "$STAGE/cleanup.sh"
 (cd "$BUILD_ROOT/dist" && ditto -c -k --keepParent "$NAME" "$NAME.zip")
 

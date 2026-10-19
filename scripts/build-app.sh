@@ -33,6 +33,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/GoldenPassport" "$APP/Contents/MacOS/$EXECUTABLE"
 cp "$ROOT/Resources/statusIcon.png" "$APP/Contents/Resources/"
+cp "$ROOT/LICENSE" "$APP/Contents/Resources/"
 
 # UI strings are written in Simplified Chinese and used as localization keys;
 # en.lproj/Localizable.strings translates them and zh-Hans.lproj maps each key to itself
@@ -73,7 +74,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 	<key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key><string>13.0</string>
 	<key>LSUIElement</key><true/>
-	<key>NSHumanReadableCopyright</key><string>Copyright © 2017 StanZhai and contributors.</string>
+	<key>NSHumanReadableCopyright</key><string>Copyright © 2017 StanZhai, 2026 thatscode. MIT License.</string>
 	<key>NSPrincipalClass</key><string>NSApplication</string>
 	<key>GPDataDirectoryName</key><string>$DATA_DIR</string>
 	<key>GPSeedDirectoryName</key><string>$SEED_DIR</string>

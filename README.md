@@ -122,9 +122,8 @@ Compared with the original 0.1.7 release.
 # Installation
 
 > [!IMPORTANT]
-> **No release has been published yet.** The first release will follow once the original author
-> confirms a license ([#33](https://github.com/stanzhai/GoldenPassport/issues/33)) and builds are
-> notarized by Apple. Until then, build the package from source as shown below; it is the same
+> **No release has been published yet.** The first release will follow once builds are notarized
+> by Apple. Until then, build the package from source as shown below; it is the same
 > package a release will contain.
 
 > [!NOTE]
@@ -290,9 +289,9 @@ refuses to run unless 0.2.x is installed and `accounts.json` reads back cleanly.
 GoldenPassport was created by [StanZhai](https://github.com/stanzhai) in 2017. This fork is
 maintained by [thatscode](https://github.com/thatscode).
 
-The original repository does not include a license. We have asked the author to add one in
-[stanzhai/GoldenPassport#33](https://github.com/stanzhai/GoldenPassport/issues/33); this fork
-will adopt it once it is available.
+Released under the [MIT License](LICENSE), inherited from the original project: the author added
+it at our request in [stanzhai/GoldenPassport#33](https://github.com/stanzhai/GoldenPassport/issues/33)
+and has since archived the original repository in favor of this fork.
 
 # Resources
 
