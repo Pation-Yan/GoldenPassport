@@ -74,7 +74,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 	<key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key><string>13.0</string>
 	<key>LSUIElement</key><true/>
-	<key>NSHumanReadableCopyright</key><string>Copyright © 2017 StanZhai, 2026 thatscode. MIT License.</string>
+	<key>NSHumanReadableCopyright</key><string>Copyright © 2017 StanZhai, 2026 thatscode and contributors. MIT License.</string>
 	<key>NSPrincipalClass</key><string>NSApplication</string>
 	<key>GPDataDirectoryName</key><string>$DATA_DIR</string>
 	<key>GPSeedDirectoryName</key><string>$SEED_DIR</string>
