@@ -26,15 +26,17 @@ public struct Settings: Codable, Equatable, Sendable {
     public var hotkeysEnabled: Bool?
     public var hotkeyModifiers: HotkeyModifiers?
     public var httpNoticeSuppressed: Bool?
+    public var automaticUpdateChecks: Bool?
 
     public init(httpServerAutoStart: Bool? = nil, httpServerPort: Int? = nil,
                 hotkeysEnabled: Bool? = nil, hotkeyModifiers: HotkeyModifiers? = nil,
-                httpNoticeSuppressed: Bool? = nil) {
+                httpNoticeSuppressed: Bool? = nil, automaticUpdateChecks: Bool? = nil) {
         self.httpServerAutoStart = httpServerAutoStart
         self.httpServerPort = httpServerPort
         self.hotkeysEnabled = hotkeysEnabled
         self.hotkeyModifiers = hotkeyModifiers
         self.httpNoticeSuppressed = httpNoticeSuppressed
+        self.automaticUpdateChecks = automaticUpdateChecks
     }
 
     /// Decodes setting by setting: a value this version does not understand (say, a hotkey
@@ -46,6 +48,7 @@ public struct Settings: Codable, Equatable, Sendable {
         hotkeysEnabled = try? values.decodeIfPresent(Bool.self, forKey: .hotkeysEnabled)
         hotkeyModifiers = try? values.decodeIfPresent(HotkeyModifiers.self, forKey: .hotkeyModifiers)
         httpNoticeSuppressed = try? values.decodeIfPresent(Bool.self, forKey: .httpNoticeSuppressed)
+        automaticUpdateChecks = try? values.decodeIfPresent(Bool.self, forKey: .automaticUpdateChecks)
     }
 }
 
@@ -98,6 +101,12 @@ public final class SettingsStore {
     public var httpNoticeSuppressed: Bool {
         get { settings.httpNoticeSuppressed ?? false }
         set { update { $0.httpNoticeSuppressed = newValue } }
+    }
+
+    /// Off unless the user turns it on: the app makes no network requests on its own.
+    public var automaticUpdateChecks: Bool {
+        get { settings.automaticUpdateChecks ?? false }
+        set { update { $0.automaticUpdateChecks = newValue } }
     }
 
     private func update(_ change: (inout Settings) -> Void) {

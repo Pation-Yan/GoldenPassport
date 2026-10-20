@@ -44,6 +44,8 @@ public enum AccountStoreError: Error, Equatable, LocalizedError {
 /// from a background queue while the menu mutates it on the main thread.
 public final class AccountStore: @unchecked Sendable {
     public static let fileName = "accounts.json"
+    /// Version of the format of `fileName` (docs/compatibility.md); 0 is the 0.1.x `gp.secrets`.
+    public static let dataFormat = 1
 
     private let fileURL: URL
     private let lock = NSLock()

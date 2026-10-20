@@ -28,8 +28,8 @@ A native Google Authenticator for the macOS menu bar: TOTP codes one click (or o
 
 Click the key icon in the menu bar. The top line counts down until the codes change. Each account
 is listed as `name: code`; click a row to copy its code. The first ten accounts show their global
-hotkey on the right. Below the list are account management, the local HTTP API, hotkey settings
-and launch at login.
+hotkey on the right. Below the list are account management, the local HTTP API, hotkey settings,
+launch at login and update checks.
 
 <img src="screenshot/menu.png" alt="Menu bar menu" width="380">
 
@@ -77,7 +77,7 @@ Compared with the original 0.1.7 release.
   otpauth URL (SHA1 / SHA256 / SHA512, 6–8 digits), verified against the RFC 6238 test vectors.
 - Accounts are stored as an ordered list (`accounts.json`) instead of a dictionary whose order
   changed on every launch.
-- 41 unit tests cover TOTP, URL parsing, storage, migration and the HTTP API.
+- 62 unit tests cover TOTP, URL parsing, storage, migration, the HTTP API and the update check.
 
 ### New features
 
@@ -88,6 +88,9 @@ Compared with the original 0.1.7 release.
 - **Export as an otpauth URL list** (`.txt`) that other authenticator apps can import; import
   accepts both this format and `.secrets` backups ([#10](https://github.com/stanzhai/GoldenPassport/issues/10), [#30](https://github.com/stanzhai/GoldenPassport/issues/30)).
 - **Launch at login** toggle.
+- **Update check**: 检查更新... asks GitHub whether a newer release is out, and 每天自动检查更新
+  does so once a day (off by default). If a release changes the data format or needs an
+  intermediate upgrade first, the prompt says so before you install anything.
 - The account name is suggested from the otpauth URL label, and pasted URLs are trimmed ([#26](https://github.com/stanzhai/GoldenPassport/issues/26)).
 
 ### Fixes
@@ -104,6 +107,11 @@ Compared with the original 0.1.7 release.
 
 - The HTTP API is off on new installs. It has no password, so while it runs anything running as
   you on this Mac can read every code. Upgrades from 0.1.x keep their previous setting.
+- GoldenPassport goes online only to check for updates, and only when you ask it to: choose
+  检查更新..., or turn on 每天自动检查更新 (off by default). The check asks GitHub's API for the
+  latest release and, if it is newer, downloads that release's small `compat.json`. Requests
+  identify themselves only as `GoldenPassport/<version>` and carry no cookies or account
+  information. Nothing is downloaded or installed automatically.
 - The HTTP API listens on 127.0.0.1 only and rejects requests with a foreign `Host` header
   ([#6](https://github.com/stanzhai/GoldenPassport/issues/6)), so web pages cannot read your codes through DNS rebinding.
 - Data files are owner-only: the data directory is `0700` and files are `0600`. 0.1.x left them
@@ -209,6 +217,8 @@ Click the key icon in the menu bar. Each account shows its current code; click o
 | 全局快捷键 | Choose the modifier keys for the hotkeys, or turn them off |
 | 开机自动启动 | Launch GoldenPassport at login |
 | 语言 / Language | Follow the system language, or always use 简体中文 or English (restarts the app) |
+| 检查更新... | Ask GitHub now whether a newer release is out |
+| 每天自动检查更新 | Check once a day; a newer release appears at the top of the menu (off by default) |
 | 帮助 (⌘H) | Open the project page on GitHub |
 
 ### Global hotkeys
@@ -288,7 +298,7 @@ they contain your secrets.
 Requires Xcode 16+ (Swift 6 toolchain). No third-party dependencies.
 
 ```
-make test      # unit tests (TOTP RFC 6238 vectors, URL parsing, storage, migration, HTTP API)
+make test      # unit tests (TOTP RFC 6238 vectors, URL parsing, storage, migration, HTTP API, update check)
 make dev       # isolated "GoldenPassport Dev.app": own bundle id, data dir, port 17305, hotkeys off
 make run-dev   # build and launch the Dev app
 make release   # "GoldenPassport.app", drop-in replacement for the installed app

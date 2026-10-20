@@ -21,10 +21,19 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private var hotkeyChoiceItems: [NSMenuItem] = []
     private var launchAtLoginItem: NSMenuItem!
     private var languageChoiceItems: [NSMenuItem] = []
+    private let updateItem = NSMenuItem()
+    private let updateSeparator = NSMenuItem.separator()
+    private var automaticUpdatesItem: NSMenuItem!
 
     private var refreshTimer: Timer?
     private var deleteMode = false
     private var httpServer: LocalHTTPServer?
+
+    private let appVersion: String
+    private let updateChecker: UpdateChecker
+    private var availableUpdate: AvailableUpdate?
+    private var lastUpdateCheck: Date?
+    private var updateTimer: Timer?
 
     private lazy var addWindow = AddAccountWindowController(store: store) { [weak self] in
         self?.rebuildMenu()
@@ -44,6 +53,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         self.store = store
         self.settings = settings
         hotkeys = HotkeyMonitor(store: store)
+        appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        updateChecker = UpdateChecker(currentVersion: AppVersion(appVersion) ?? AppVersion("0")!,
+                                      fetch: UpdateChecker.networkFetch(appVersion: appVersion))
         super.init()
 
         if let button = statusItem.button {
@@ -65,6 +77,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
         if settings.httpServerAutoStart { startHTTPServer() }
         applyHotkeySettings()
+        scheduleUpdateChecks(firstCheckIn: 60)
     }
 
     func shutdown() {
@@ -75,6 +88,15 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     // MARK: - Menu construction
 
     private func buildStaticItems() {
+        // Shown at the very top once a check finds a newer release.
+        updateItem.target = self
+        updateItem.action = #selector(updateItemClicked)
+        updateItem.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+        updateItem.isHidden = true
+        updateSeparator.isHidden = true
+        menu.addItem(updateItem)
+        menu.addItem(updateSeparator)
+
         timerItem.isEnabled = false
         menu.addItem(timerItem)
         menu.addItem(.separator())
@@ -129,6 +151,11 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         }
         languageMenu.insertItem(.separator(), at: 1)
         languageItem.submenu = languageMenu
+
+        menu.addItem(.separator())
+        menu.addItem(item(String(localized: "检查更新..."), #selector(checkForUpdatesClicked)))
+        automaticUpdatesItem = add(item(String(localized: "每天自动检查更新"), #selector(automaticUpdatesClicked)))
+        automaticUpdatesItem.toolTip = String(localized: "每天向 GitHub 查询一次最新版本。请求里只有 App 的版本号，不含账号信息。")
         menu.addItem(item(String(localized: "帮助"), #selector(helpClicked), key: "h"))
         menu.addItem(item(String(localized: "退出"), #selector(quitClicked), key: "q"))
     }
@@ -216,11 +243,21 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         }
     }
 
+    private func refreshUpdateItems() {
+        automaticUpdatesItem.state = settings.automaticUpdateChecks ? .on : .off
+        updateItem.isHidden = availableUpdate == nil
+        updateSeparator.isHidden = availableUpdate == nil
+        if let availableUpdate {
+            updateItem.title = String(localized: "新版本 \(availableUpdate.version) 可用...")
+        }
+    }
+
     // MARK: - NSMenuDelegate
 
     func menuWillOpen(_ menu: NSMenu) {
         rebuildMenu()
         refreshHTTPItems()
+        refreshUpdateItems()
         let timer = Timer(timeInterval: 1, target: self, selector: #selector(refreshCodes), userInfo: nil, repeats: true)
         RunLoop.main.add(timer, forMode: .common)
         refreshTimer = timer
@@ -481,6 +518,93 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         relaunch.arguments = ["-c", "while kill -0 \(ProcessInfo.processInfo.processIdentifier) 2>/dev/null; do sleep 0.2; done; open \"$0\"", Bundle.main.bundlePath]
         try? relaunch.run()
         NSApp.terminate(nil)
+    }
+
+    // MARK: - Updates
+
+    /// Ticks hourly and checks once the last successful check is about a day old, so a check
+    /// that failed (say, offline right after login) is retried an hour later.
+    private func scheduleUpdateChecks(firstCheckIn delay: TimeInterval) {
+        updateTimer?.invalidate()
+        updateTimer = nil
+        guard settings.automaticUpdateChecks else { return }
+        let timer = Timer(fireAt: Date().addingTimeInterval(delay), interval: 3600, target: self,
+                          selector: #selector(updateTimerFired), userInfo: nil, repeats: true)
+        timer.tolerance = 300
+        RunLoop.main.add(timer, forMode: .common)
+        updateTimer = timer
+    }
+
+    @objc private func updateTimerFired() {
+        if let lastUpdateCheck, Date().timeIntervalSince(lastUpdateCheck) < 23 * 3600 { return }
+        Task { @MainActor in await self.checkForUpdates(userInitiated: false) }
+    }
+
+    @objc private func checkForUpdatesClicked() {
+        Task { @MainActor in await self.checkForUpdates(userInitiated: true) }
+    }
+
+    @objc private func automaticUpdatesClicked() {
+        settings.automaticUpdateChecks.toggle()
+        scheduleUpdateChecks(firstCheckIn: 0)
+    }
+
+    @objc private func updateItemClicked() {
+        if let availableUpdate { presentUpdate(availableUpdate) }
+    }
+
+    /// Automatic checks stay quiet: a newer release only shows up as an item at the top of the menu.
+    @MainActor
+    private func checkForUpdates(userInitiated: Bool) async {
+        do {
+            let result = try await updateChecker.check()
+            lastUpdateCheck = Date()
+            switch result {
+            case .upToDate:
+                availableUpdate = nil
+                if userInitiated {
+                    showAlert(String(localized: "已是最新版本"),
+                              informative: String(localized: "GoldenPassport \(appVersion) 是目前最新的版本。"))
+                }
+            case .available(let update):
+                availableUpdate = update
+                if userInitiated { presentUpdate(update) }
+            }
+        } catch {
+            if userInitiated {
+                showAlert(String(localized: "检查更新失败"), informative: error.localizedDescription, style: .warning)
+            }
+        }
+    }
+
+    /// Only points to the release page: installing goes through install.sh, which backs up first.
+    private func presentUpdate(_ update: AvailableUpdate) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "GoldenPassport \(update.version) 已发布")
+        var paragraphs = [String(localized: "你现在使用的是 \(appVersion)。")]
+        var page = update.releasePage
+        var pageButton = String(localized: "查看发布页面")
+        for notice in update.notices {
+            switch notice {
+            case .dataFormatChange:
+                alert.alertStyle = .warning
+                paragraphs.append(String(localized: "⚠️ 这个版本会把账号数据转换为新格式，升级后在新版本里所做的修改，旧版本看不到。请先导出备份，再用安装包里的 install.sh 安装，它会先备份数据。"))
+            case .upgradeFirst(let version, let releasePage):
+                alert.alertStyle = .warning
+                paragraphs.append(String(localized: "⚠️ 不能从当前版本直接升级到 \(update.version)，请先升级到 \(version)。"))
+                page = releasePage
+                pageButton = String(localized: "查看 \(version) 的发布页面")
+            case .compatibilityUnknown:
+                paragraphs.append(String(localized: "无法确认这个版本的兼容性，升级前请先阅读发布说明。"))
+            }
+        }
+        alert.informativeText = paragraphs.joined(separator: "\n\n")
+        alert.addButton(withTitle: pageButton)
+        alert.addButton(withTitle: String(localized: "稍后"))
+        activateApp()
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSWorkspace.shared.open(page)
+        }
     }
 
     // MARK: - HTTP server

@@ -311,6 +311,15 @@ struct SettingsTests {
         #expect(reloaded.httpServerPort == 18000)
     }
 
+    @Test func updateChecksStayOffUntilTurnedOn() throws {
+        let dir = try makeTempDirectory()
+        let defaults = AppEnvironment.Defaults(httpPort: 17304, hotkeysEnabled: true)
+        let settings = SettingsStore(directory: dir, defaults: defaults)
+        #expect(settings.automaticUpdateChecks == false)
+        settings.automaticUpdateChecks = true
+        #expect(SettingsStore(directory: dir, defaults: defaults).automaticUpdateChecks)
+    }
+
     @Test func unknownValueResetsOnlyThatSetting() throws {
         let dir = try makeTempDirectory()
         // As a later version might write it: a new hotkey choice and a changed type.

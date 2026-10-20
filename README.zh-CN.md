@@ -22,7 +22,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 
 ### 菜单栏菜单
 
-点击菜单栏上的钥匙图标。第一行是验证码刷新的倒计时。每个账号显示为「名称: 验证码」，点击即可复制验证码。前 10 个账号右侧标出了对应的全局快捷键。列表下方依次是认证管理、HTTP 接口、全局快捷键和开机自动启动。
+点击菜单栏上的钥匙图标。第一行是验证码刷新的倒计时。每个账号显示为「名称: 验证码」，点击即可复制验证码。前 10 个账号右侧标出了对应的全局快捷键。列表下方依次是认证管理、HTTP 接口、全局快捷键、开机自动启动和检查更新。
 
 <img src="screenshot/menu.png" alt="菜单栏菜单" width="380">
 
@@ -59,7 +59,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 - 改用 Swift Package 构建，不再使用 Xcode 工程和 CocoaPods。原来的 Objective-C 验证码代码、内置的 google-toolbox-for-mac 源码和 Swifter HTTP 服务器都已移除。
 - TOTP 基于 CryptoKit 实现，支持 otpauth URL 中的 `algorithm`、`digits`、`period` 参数（SHA1 / SHA256 / SHA512，6–8 位），并通过了 RFC 6238 的标准测试向量。
 - 账号改为有序列表存储（`accounts.json`）。原来用的是字典，每次启动顺序都可能变。
-- 41 个单元测试，覆盖 TOTP、URL 解析、存储、数据迁移和 HTTP 接口。
+- 62 个单元测试，覆盖 TOTP、URL 解析、存储、数据迁移、HTTP 接口和检查更新。
 
 ### 新功能
 
@@ -67,6 +67,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 - **全局快捷键可配置**：⌃⌥⌘0–9（新的默认值）、⇧⌘0–9（0.1.x 的方式）、⌃⌥0–9，或者关闭。改为系统级注册，按键不会再同时传给当前 App（[#4](https://github.com/stanzhai/GoldenPassport/issues/4)、[#11](https://github.com/stanzhai/GoldenPassport/issues/11)、[#18](https://github.com/stanzhai/GoldenPassport/issues/18)）。
 - **导出 otpauth URL 列表**（`.txt`），可以导入其他验证器 App。导入同时支持这种格式和 `.secrets` 备份文件（[#10](https://github.com/stanzhai/GoldenPassport/issues/10)、[#30](https://github.com/stanzhai/GoldenPassport/issues/30)）。
 - **开机自动启动**开关。
+- **检查更新**：「检查更新...」向 GitHub 查询有没有新版本，「每天自动检查更新」每天查询一次（默认关闭）。如果新版本会改变数据格式，或者需要先升级到某个中间版本，提示里会在安装前写明。
 - 添加账号时，会根据 otpauth URL 里的标签自动填写标识；粘贴的 URL 会自动去掉首尾空白（[#26](https://github.com/stanzhai/GoldenPassport/issues/26)）。
 
 ### 问题修复
@@ -81,6 +82,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 ### 安全与隐私
 
 - 全新安装时 HTTP 接口默认关闭。它没有访问密码，开启期间，这台 Mac 上以你的身份运行的任何程序都能读取全部验证码。从 0.1.x 升级的用户保持原来的设置。
+- GoldenPassport 只在检查更新时联网，而且只在你要求时才检查：点「检查更新...」，或者打开「每天自动检查更新」（默认关闭）。检查时会向 GitHub 的接口查询最新版本；如果比当前版本新，还会下载这个版本附带的 `compat.json` 小文件。请求只以 `GoldenPassport/<版本号>` 标识自己，不带 Cookie，也不带任何账号信息。不会自动下载或安装新版本。
 - HTTP 接口只监听 127.0.0.1，并拒绝 `Host` 头不是本机的请求（[#6](https://github.com/stanzhai/GoldenPassport/issues/6)），网页无法通过 DNS 重绑定读取你的验证码。
 - 数据文件仅本人可读：数据目录权限为 `0700`，文件为 `0600`。0.1.x 的文件本机所有用户都能读，0.2.0 会收紧已有文件的权限，但不改动文件内容。
 - 两种导出格式在导出前都会提示：文件里是未加密的全部密钥。
@@ -158,6 +160,8 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 | 全局快捷键 | 选择快捷键的修饰键，或者关闭 |
 | 开机自动启动 | 登录时自动启动 GoldenPassport |
 | 语言 / Language | 跟随系统，或固定使用简体中文 / English（切换后会重启 App） |
+| 检查更新... | 立即向 GitHub 查询有没有新版本 |
+| 每天自动检查更新 | 每天查询一次，有新版本时显示在菜单最上方（默认关闭） |
 | 帮助（⌘H） | 打开 GitHub 项目主页 |
 
 ### 全局快捷键
@@ -208,7 +212,7 @@ echo "$code"
 需要 Xcode 16 或更高版本（Swift 6 工具链），不依赖第三方库。
 
 ```
-make test      # 单元测试（TOTP RFC 6238 测试向量、URL 解析、存储、迁移、HTTP 接口）
+make test      # 单元测试（TOTP RFC 6238 测试向量、URL 解析、存储、迁移、HTTP 接口、检查更新）
 make dev       # 独立的「GoldenPassport Dev.app」：独立的 Bundle ID、数据目录、端口 17305，快捷键默认关闭
 make run-dev   # 构建并启动开发版
 make release   # 「GoldenPassport.app」，可直接替换已安装的正式版
