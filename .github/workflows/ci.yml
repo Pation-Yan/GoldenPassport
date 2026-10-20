@@ -42,6 +42,14 @@ jobs:
           test -f "$APP/Contents/Resources/LICENSE"
           # Headless migration check against an empty data directory.
           "$APP/Contents/MacOS/GoldenPassport" --migrate-data --data-dir "$RUNNER_TEMP/gp-data"
+      - name: Verify package
+        run: |
+          ZIP="$(ls ~/Library/Caches/GoldenPassport-build/dist/*.zip)"
+          unzip -Z1 "$ZIP" > "$RUNNER_TEMP/zip-list.txt"
+          # AppleDouble ._ entries would end up inside the bundle when extracted with unzip.
+          if grep '/\._' "$RUNNER_TEMP/zip-list.txt"; then echo "::error::package contains AppleDouble ._ files"; exit 1; fi
+          unzip -q "$ZIP" -d "$RUNNER_TEMP/unzipped"
+          codesign --verify --strict "$RUNNER_TEMP"/unzipped/*/GoldenPassport.app
       - uses: actions/upload-artifact@v4
         with:
           name: GoldenPassport-beta

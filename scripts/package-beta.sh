@@ -19,7 +19,8 @@ cp "$ROOT/scripts/install.sh" "$ROOT/scripts/rollback.sh" "$ROOT/scripts/cleanup
 cp "$ROOT/docs/beta-testing.md" "$STAGE/测试说明.md"
 cp "$ROOT/LICENSE" "$STAGE/"
 chmod +x "$STAGE/install.sh" "$STAGE/rollback.sh" "$STAGE/cleanup.sh"
-(cd "$BUILD_ROOT/dist" && ditto -c -k --keepParent "$NAME" "$NAME.zip")
+# No AppleDouble ._ entries: unzip would put them inside the bundle and break its signature.
+(cd "$BUILD_ROOT/dist" && ditto -c -k --norsrc --noextattr --noacl --keepParent "$NAME" "$NAME.zip")
 
 echo "Packaged $STAGE.zip"
 echo "  sha256: $(shasum -a 256 "$STAGE.zip" | awk '{print $1}')"
