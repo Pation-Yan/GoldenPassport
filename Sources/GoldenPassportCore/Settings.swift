@@ -36,6 +36,17 @@ public struct Settings: Codable, Equatable, Sendable {
         self.hotkeyModifiers = hotkeyModifiers
         self.httpNoticeSuppressed = httpNoticeSuppressed
     }
+
+    /// Decodes setting by setting: a value this version does not understand (say, a hotkey
+    /// choice added by a later version) resets only that setting, not the whole file.
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        httpServerAutoStart = try? values.decodeIfPresent(Bool.self, forKey: .httpServerAutoStart)
+        httpServerPort = try? values.decodeIfPresent(Int.self, forKey: .httpServerPort)
+        hotkeysEnabled = try? values.decodeIfPresent(Bool.self, forKey: .hotkeysEnabled)
+        hotkeyModifiers = try? values.decodeIfPresent(HotkeyModifiers.self, forKey: .hotkeyModifiers)
+        httpNoticeSuppressed = try? values.decodeIfPresent(Bool.self, forKey: .httpNoticeSuppressed)
+    }
 }
 
 public final class SettingsStore {
@@ -43,6 +54,9 @@ public final class SettingsStore {
 
     private let fileURL: URL
     private let defaults: AppEnvironment.Defaults
+    /// The file exists but is not a settings object at all. It is renamed before the
+    /// first save instead of being overwritten.
+    private var unreadableFileInPlace: Bool
     public private(set) var settings: Settings
 
     public init(directory: URL, defaults: AppEnvironment.Defaults) {
@@ -51,13 +65,17 @@ public final class SettingsStore {
         if let data = try? Data(contentsOf: fileURL),
            let decoded = try? JSONDecoder().decode(Settings.self, from: data) {
             settings = decoded
+            unreadableFileInPlace = false
         } else {
             settings = Settings()
+            unreadableFileInPlace = FileManager.default.fileExists(atPath: fileURL.path)
         }
     }
 
+    /// Off unless the user turned it on: anything running as the user can read every code
+    /// through the API. Upgraders from 0.1.x get their old value written at migration.
     public var httpServerAutoStart: Bool {
-        get { settings.httpServerAutoStart ?? true }
+        get { settings.httpServerAutoStart ?? false }
         set { update { $0.httpServerAutoStart = newValue } }
     }
 
@@ -84,10 +102,24 @@ public final class SettingsStore {
 
     private func update(_ change: (inout Settings) -> Void) {
         change(&settings)
+        if unreadableFileInPlace {
+            let kept = fileURL.deletingLastPathComponent()
+                .appendingPathComponent("\(Self.fileName).unreadable-\(Self.timestamp())")
+            // If the file cannot be kept, leave it alone and keep this session's changes in memory.
+            guard (try? FileManager.default.moveItem(at: fileURL, to: kept)) != nil else { return }
+            unreadableFileInPlace = false
+        }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         if let data = try? encoder.encode(settings) {
             try? FileStorage.writeProtected(data, to: fileURL)
         }
+    }
+
+    private static func timestamp() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        return formatter.string(from: Date())
     }
 }

@@ -94,6 +94,29 @@ struct MigrationTests {
         #expect(AccountStore(directory: dir).count == 0)
     }
 
+    // 0.1.x wrote config.plist only once a setting was changed, and started the HTTP API
+    // unless the user had turned that off.
+    @Test(arguments: [nil, ["http_server_port": "18000"], ["http_server_auto_start": "true"]] as [[String: String]?])
+    func upgradeKeepsTheOldHTTPAutoStart(config: [String: String]?) throws {
+        let dir = try makeTempDirectory()
+        try writeLegacy(["a": validURL], to: dir.appendingPathComponent(LegacyData.secretsFileName))
+        if let config {
+            try writeLegacy(config, to: dir.appendingPathComponent(LegacyData.configFileName))
+        }
+        let env = AppEnvironment(dataDirectory: dir, seedDirectory: nil,
+                                 defaults: .init(httpPort: 17304, hotkeysEnabled: true))
+        try env.prepareDataDirectory()
+        #expect(SettingsStore(directory: dir, defaults: env.defaults).httpServerAutoStart)
+    }
+
+    @Test func freshInstallStartsWithTheHTTPServerOff() throws {
+        let dir = try makeTempDirectory()
+        let env = AppEnvironment(dataDirectory: dir, seedDirectory: nil,
+                                 defaults: .init(httpPort: 17304, hotkeysEnabled: true))
+        try env.prepareDataDirectory()
+        #expect(SettingsStore(directory: dir, defaults: env.defaults).httpServerAutoStart == false)
+    }
+
     @Test func devSeedsFromCopyWithoutTouchingSource() throws {
         let seed = try makeTempDirectory()
         let seedFile = seed.appendingPathComponent(LegacyData.secretsFileName)
@@ -260,6 +283,37 @@ struct SettingsTests {
         let reloaded = SettingsStore(directory: dir, defaults: defaults)
         #expect(reloaded.httpNoticeSuppressed)
         #expect(reloaded.httpServerPort == 18000)
+    }
+
+    @Test func unknownValueResetsOnlyThatSetting() throws {
+        let dir = try makeTempDirectory()
+        // As a later version might write it: a new hotkey choice and a changed type.
+        try Data(#"{"hotkeyModifiers":"hyper","hotkeysEnabled":false,"httpServerAutoStart":"yes","httpServerPort":18000}"#.utf8)
+            .write(to: dir.appendingPathComponent(SettingsStore.fileName))
+        let settings = SettingsStore(directory: dir, defaults: .init(httpPort: 17304, hotkeysEnabled: true))
+        #expect(settings.hotkeyModifiers == .controlOptionCommand)
+        #expect(settings.httpServerAutoStart == false)
+        #expect(settings.hotkeysEnabled == false)
+        #expect(settings.httpServerPort == 18000)
+    }
+
+    @Test func unreadableFileIsKeptNotOverwritten() throws {
+        let dir = try makeTempDirectory()
+        let file = dir.appendingPathComponent(SettingsStore.fileName)
+        try Data("not json".utf8).write(to: file)
+        let defaults = AppEnvironment.Defaults(httpPort: 17304, hotkeysEnabled: true)
+
+        let settings = SettingsStore(directory: dir, defaults: defaults)
+        #expect(settings.httpServerAutoStart == false)
+        #expect(try String(contentsOf: file, encoding: .utf8) == "not json")
+
+        settings.httpServerPort = 18000
+        let kept = try FileManager.default.contentsOfDirectory(atPath: dir.path)
+            .filter { $0.hasPrefix("\(SettingsStore.fileName).unreadable-") }
+        #expect(kept.count == 1)
+        let keptName = try #require(kept.first)
+        #expect(try String(contentsOf: dir.appendingPathComponent(keptName), encoding: .utf8) == "not json")
+        #expect(SettingsStore(directory: dir, defaults: defaults).httpServerPort == 18000)
     }
 
     @Test func hotkeyDigitsFollowLegacyNumbering() {

@@ -76,12 +76,14 @@ public struct AppEnvironment: Sendable {
             try AccountStore(directory: dataDirectory).replaceAll(with: LegacyData.accounts(from: legacy))
 
             let settingsURL = dataDirectory.appendingPathComponent(SettingsStore.fileName)
-            if !fm.fileExists(atPath: settingsURL.path),
-               let config = try? LegacyData.readDictionary(at: legacyConfigURL) {
+            if !fm.fileExists(atPath: settingsURL.path) {
+                // 0.1.x wrote config.plist only once a setting was changed, and fell back
+                // to defaults when it could not read it.
+                let config = (try? LegacyData.readDictionary(at: legacyConfigURL)) ?? [:]
                 let store = SettingsStore(directory: dataDirectory, defaults: defaults)
-                if let auto = config["http_server_auto_start"] {
-                    store.httpServerAutoStart = auto == "true"
-                }
+                // 0.1.x started the HTTP API unless the user had turned that off. New installs
+                // start with it off; upgraders keep the old behaviour so their scripts still work.
+                store.httpServerAutoStart = config["http_server_auto_start"].map { $0 == "true" } ?? true
                 // Only a port the user explicitly changed carries over; Dev keeps its own default.
                 if seedDirectory == nil, let port = config["http_server_port"].flatMap(Int.init) {
                     store.httpServerPort = port

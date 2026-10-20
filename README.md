@@ -102,6 +102,8 @@ Compared with the original 0.1.7 release.
 
 ### Security & privacy
 
+- The HTTP API is off on new installs. It has no password, so while it runs anything running as
+  you on this Mac can read every code. Upgrades from 0.1.x keep their previous setting.
 - The HTTP API listens on 127.0.0.1 only and rejects requests with a foreign `Host` header
   ([#6](https://github.com/stanzhai/GoldenPassport/issues/6)), so web pages cannot read your codes through DNS rebinding.
 - Data files are owner-only: the data directory is `0700` and files are `0600`. 0.1.x left them
@@ -116,6 +118,7 @@ Compared with the original 0.1.7 release.
 | Minimum macOS | 10.10 | **13** |
 | Default hotkeys | ⇧⌘0–9 (3/4/5 clash with screenshots) | **⌃⌥⌘0–9**; ⇧⌘ is still available in the menu |
 | Typing the code into the frontmost app | Accessibility permission | Still needs it, and it must be **granted again** after upgrading |
+| HTTP API at launch | On unless you turned it off | **Off on new installs**; upgrades keep the 0.1.x setting |
 | Data file | `gp.secrets` | `accounts.json` (migrated automatically on first launch; `gp.secrets` is kept but no longer updated) |
 | Account order | Changed randomly between launches | Alphabetical after migration, then whatever order you set |
 
@@ -217,7 +220,8 @@ ones get hotkeys.
 ### RESTful API
 
 When enabled, GoldenPassport serves codes on `http://localhost:17304/` (the port can be changed
-in the menu). It listens on 127.0.0.1 only.
+in the menu). It listens on 127.0.0.1 only. The API is off on new installs: turn it on with
+开启 HTTP 服务, and check 启动时同时开启 HTTP 服务 to start it with the app.
 
 | Endpoint | Response |
 |---|---|
