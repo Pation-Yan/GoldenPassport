@@ -45,17 +45,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try environment.prepareDataDirectory()
             store = try AccountStore(directory: environment.dataDirectory)
         } catch {
-            let alert = NSAlert()
-            alert.alertStyle = .critical
-            alert.messageText = String(localized: "无法读取数据目录")
-            alert.informativeText = "\(environment.dataDirectory.path)\n\n\(error.localizedDescription)"
-            alert.runModal()
+            showStartupFailure(error, dataDirectory: environment.dataDirectory)
             NSApp.terminate(nil)
             return
         }
         statusMenuController = StatusMenuController(
             store: store,
             settings: SettingsStore(directory: environment.dataDirectory, defaults: environment.defaults))
+    }
+
+    /// For an unreadable data file, says that the file was left untouched and points to the recovery steps.
+    private func showStartupFailure(_ error: Error, dataDirectory: URL) {
+        let unreadable = error as? UnreadableDataFileError
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        if let unreadable {
+            alert.messageText = String(localized: "无法读取 \(unreadable.file.lastPathComponent)")
+            alert.informativeText = String(localized: "GoldenPassport 没有改动这个文件。读不到账号时它不会启动，以免覆盖或漏掉你的数据。\n\n文件可能已损坏或被手动改过，恢复方法见帮助。")
+                + "\n\n\(unreadable.file.path)\n\(unreadable.underlying.localizedDescription)"
+        } else {
+            alert.messageText = String(localized: "无法读取数据目录")
+            alert.informativeText = "\(dataDirectory.path)\n\n\(error.localizedDescription)"
+        }
+        alert.addButton(withTitle: String(localized: "查看帮助"))
+        alert.addButton(withTitle: String(localized: "在 Finder 中显示"))
+        alert.addButton(withTitle: String(localized: "退出"))
+        activateApp()
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            NSWorkspace.shared.open(Self.dataRecoveryHelpURL)
+        case .alertSecondButtonReturn:
+            NSWorkspace.shared.activateFileViewerSelecting([unreadable?.file ?? dataDirectory])
+        default:
+            break
+        }
+    }
+
+    /// The README section on unreadable data files, in the language the UI is using.
+    private static var dataRecoveryHelpURL: URL {
+        let chinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") == true
+        var components = URLComponents(string: chinese
+            ? "https://github.com/thatscode/GoldenPassport/blob/modernize/README.zh-CN.md"
+            : "https://github.com/thatscode/GoldenPassport/blob/modernize/README.md")!
+        // URLComponents percent-encodes the fragment; URL(string:) only does that from macOS 14 on.
+        components.fragment = chinese ? "goldenpassport-无法读取数据时" : "if-goldenpassport-cant-read-its-data"
+        return components.url!
     }
 
     func applicationWillTerminate(_ notification: Notification) {

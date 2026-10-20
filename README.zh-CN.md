@@ -190,6 +190,19 @@ echo "$code"
 
 所有数据都在 `~/Library/Application Support/GoldenPassport/`：`accounts.json`、`settings.json`，以及旧版的 `gp.secrets` / `config.plist`。密钥没有加密，只靠文件权限保护：0.2.x 会把目录权限设为 `0700`、文件设为 `0600`（0.1.x 的文件本机所有用户都能读）。
 
+### GoldenPassport 无法读取数据时
+
+如果数据文件读不出来（比如文件损坏了，或者被手动改过），GoldenPassport 会弹出提示并退出，不会改动任何文件。它不会带着空列表启动，否则下次保存时就会覆盖原来的文件。恢复方法如下，操作都在数据目录里进行（在提示框里点「在 Finder 中显示」，或者打开 `~/Library/Application Support/GoldenPassport/`）：
+
+1. **保留损坏的文件**：给它改个名字，例如 `accounts.damaged.json`，不要删除。
+2. **如果有 `accounts.json` 的备份**，把它复制回数据目录，再启动 GoldenPassport。备份可以来自时间机器（Time Machine），也可以来自 `~/GoldenPassport-backups/<时间>/data/`：如果你在已经装了 0.2.x 的情况下运行过 `install.sh`，那里保存着那次安装时的账号。
+3. **如果只有导出文件**（`.secrets` 或 `.txt`）：数据目录里如果有 `gp.secrets`，先把它也暂时移出去。然后启动 GoldenPassport（这时列表是空的），导入导出文件。如果还想保留回退到 0.1.x 的可能，导入后再把 `gp.secrets` 放回去。不先移走的话，GoldenPassport 会先用 `gp.secrets` 重建列表（也就是你从 0.1.x 升级那一刻的账号），而导入会跳过所有同名的账号，留下的就是这些旧记录。
+4. **如果两者都没有**，但数据目录里还有 `gp.secrets`：做完第 1 步后直接启动 GoldenPassport。它会用 `gp.secrets` 重建列表，恢复到你从 0.1.x 升级那一刻的账号；之后新增或修改的账号，用这个方法找不回来。
+
+如果提示里写的是 `gp.secrets`，说明 0.1.x 的数据文件损坏了，里面的账号无法迁移。把它移出数据目录，再按上面的方法用备份或导出文件恢复。
+
+到 issue 里求助时，可以附上提示框里的文字，但**不要附带数据文件**，里面有你的密钥。
+
 # 从源码构建
 
 需要 Xcode 16 或更高版本（Swift 6 工具链），不依赖第三方库。

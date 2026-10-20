@@ -254,6 +254,35 @@ All data lives in `~/Library/Application Support/GoldenPassport/` (`accounts.jso
 unencrypted, protected only by file permissions: 0.2.x restricts the directory to `0700`
 and its files to `0600` (0.1.x left them readable by every local user).
 
+### If GoldenPassport can't read its data
+
+If a data file can't be read (for example, it is damaged or was edited by hand), GoldenPassport
+shows an alert and quits without changing any file. It does not start with an empty list, because
+the next save would then overwrite the file. To recover, work in the data folder (click Show in
+Finder in the alert, or open `~/Library/Application Support/GoldenPassport/`):
+
+1. **Keep the damaged file**: rename it, for example to `accounts.damaged.json`. Don't delete it.
+2. **If you have a backup of `accounts.json`**, copy it back into the data folder and start
+   GoldenPassport. Backups can come from Time Machine, or from
+   `~/GoldenPassport-backups/<timestamp>/data/` if you ran `install.sh` while 0.2.x was already
+   installed; that copy holds your accounts as they were at that install.
+3. **If you only have an export** (`.secrets` or `.txt`): if `gp.secrets` is in the data folder,
+   move it out for now as well. Start GoldenPassport, which now starts with an empty list, and
+   import the export. Put `gp.secrets` back afterwards if you still want to be able to roll back
+   to 0.1.x. Without this step, GoldenPassport would first rebuild the list from `gp.secrets` (your
+   accounts as they were when you upgraded from 0.1.x), and the import would skip every name that
+   already exists, keeping those older entries.
+4. **If you have neither**, but `gp.secrets` is in the data folder: start GoldenPassport after
+   step 1. It rebuilds the list from `gp.secrets`, as it was when you upgraded from 0.1.x; accounts
+   added or changed since then can't be recovered this way.
+
+If the alert names `gp.secrets` instead, the 0.1.x data file is damaged and its accounts can't be
+migrated. Move it out of the data folder, then restore your accounts from a backup or an export
+as above.
+
+When asking for help in an issue, include the alert text, but **never attach the data files**:
+they contain your secrets.
+
 # Building
 
 Requires Xcode 16+ (Swift 6 toolchain). No third-party dependencies.
