@@ -7,7 +7,7 @@ struct CodeAPITests {
     let expected = TOTP(secret: Data("foobar".utf8)).code(at: Date(timeIntervalSince1970: 1111111109))
 
     func store() throws -> AccountStore {
-        let store = AccountStore(directory: try makeTempDirectory())
+        let store = try AccountStore(directory: try makeTempDirectory())
         try store.add(name: "AWS:alice@123", url: validURL)
         try store.add(name: "<b>", url: validURL)
         return store

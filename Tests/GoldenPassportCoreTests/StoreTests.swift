@@ -14,24 +14,24 @@ let validURL = "otpauth://totp/Acme:alice?secret=MZXW6YTBOI&issuer=Acme"
 struct AccountStoreTests {
     @Test func addPersistsInOrderAndRemove() throws {
         let dir = try makeTempDirectory()
-        let store = AccountStore(directory: dir)
+        let store = try AccountStore(directory: dir)
         try store.add(name: "b", url: validURL)
         let a = try store.add(name: " a ", url: "  \(validURL)\n")
         #expect(a.name == "a")
         #expect(a.url == validURL)
 
-        let reloaded = AccountStore(directory: dir)
+        let reloaded = try AccountStore(directory: dir)
         #expect(reloaded.accounts.map(\.name) == ["b", "a"])
 
         try reloaded.remove(id: a.id)
-        #expect(AccountStore(directory: dir).accounts.map(\.name) == ["b"])
+        #expect(try AccountStore(directory: dir).accounts.map(\.name) == ["b"])
 
         let attributes = try FileManager.default.attributesOfItem(atPath: dir.appendingPathComponent(AccountStore.fileName).path)
         #expect((attributes[.posixPermissions] as? NSNumber)?.intValue == 0o600)
     }
 
     @Test func rejectsDuplicateEmptyAndInvalid() throws {
-        let store = AccountStore(directory: try makeTempDirectory())
+        let store = try AccountStore(directory: try makeTempDirectory())
         try store.add(name: "a", url: validURL)
         #expect(throws: AccountStoreError.duplicateName("a")) { try store.add(name: "a", url: validURL) }
         #expect(throws: AccountStoreError.emptyName) { try store.add(name: "  ", url: validURL) }
@@ -40,7 +40,7 @@ struct AccountStoreTests {
     }
 
     @Test func brokenEntryDoesNotBreakOthers() throws {
-        let store = AccountStore(directory: try makeTempDirectory())
+        let store = try AccountStore(directory: try makeTempDirectory())
         try store.replaceAll(with: [Account(name: "bad", url: "garbage"), Account(name: "good", url: validURL)])
         let date = Date(timeIntervalSince1970: 1111111109)
         let codes = store.codes(at: date)
@@ -48,12 +48,25 @@ struct AccountStoreTests {
     }
 
     @Test func importSkipsExistingNames() throws {
-        let store = AccountStore(directory: try makeTempDirectory())
+        let store = try AccountStore(directory: try makeTempDirectory())
         try store.add(name: "a", url: validURL)
         let added = try store.importAccounts([(name: "a", url: "x"), (name: "b", url: validURL)])
         #expect(added == 1)
         #expect(store.accounts.map(\.name) == ["a", "b"])
         #expect(store.accounts[0].url == validURL)
+    }
+
+    @Test func unreadableFileThrowsAndIsLeftAlone() throws {
+        let dir = try makeTempDirectory()
+        let file = dir.appendingPathComponent(AccountStore.fileName)
+        try Data("not json".utf8).write(to: file)
+        do {
+            _ = try AccountStore(directory: dir)
+            Issue.record("an unreadable accounts.json must not load as an empty list")
+        } catch let error as UnreadableDataFileError {
+            #expect(error.file.lastPathComponent == AccountStore.fileName)
+        }
+        #expect(try String(contentsOf: file, encoding: .utf8) == "not json")
     }
 }
 
@@ -82,7 +95,7 @@ struct MigrationTests {
                                  defaults: .init(httpPort: 17304, hotkeysEnabled: true))
         try env.prepareDataDirectory()
 
-        #expect(AccountStore(directory: dir).accounts.map(\.name) == ["Alpha", "beta", "zeta"])
+        #expect(try AccountStore(directory: dir).accounts.map(\.name) == ["Alpha", "beta", "zeta"])
         let settings = SettingsStore(directory: dir, defaults: env.defaults)
         #expect(settings.httpServerAutoStart == false)
         #expect(settings.httpServerPort == 18000)
@@ -91,7 +104,7 @@ struct MigrationTests {
         // A second launch must not re-import over user changes.
         try AccountStore(directory: dir).replaceAll(with: [])
         try env.prepareDataDirectory()
-        #expect(AccountStore(directory: dir).count == 0)
+        #expect(try AccountStore(directory: dir).count == 0)
     }
 
     // 0.1.x wrote config.plist only once a setting was changed, and started the HTTP API
@@ -130,7 +143,7 @@ struct MigrationTests {
                                  defaults: .init(httpPort: 17305, hotkeysEnabled: false))
         try env.prepareDataDirectory()
 
-        #expect(AccountStore(directory: dev).accounts.map(\.name) == ["a"])
+        #expect(try AccountStore(directory: dev).accounts.map(\.name) == ["a"])
         #expect(SettingsStore(directory: dev, defaults: env.defaults).httpServerPort == 17305)
         #expect(SettingsStore(directory: dev, defaults: env.defaults).hotkeysEnabled == false)
         #expect(try Data(contentsOf: seedFile) == before)
@@ -158,7 +171,7 @@ struct MigrationCheckTests {
         let dir = try makeTempDirectory()
         try LegacyData.writeDictionary(["a": validURL], to: dir.appendingPathComponent(LegacyData.secretsFileName))
         _ = try MigrationCheck.run(environment: environment(dir))
-        let store = AccountStore(directory: dir)
+        let store = try AccountStore(directory: dir)
         try store.rename(id: store.accounts[0].id, to: "renamed")
         let check = try MigrationCheck.run(environment: environment(dir))
         #expect(check.status == .alreadyMigrated)
@@ -177,6 +190,19 @@ struct MigrationCheckTests {
         #expect(throws: (any Error).self) { try MigrationCheck.run(environment: environment(dir)) }
         #expect(throws: (any Error).self) { try environment(dir).prepareDataDirectory() }
         #expect(try String(contentsOf: dir.appendingPathComponent(AccountStore.fileName), encoding: .utf8) == "not json")
+    }
+
+    @Test func unreadableLegacyFileStopsMigration() throws {
+        let dir = try makeTempDirectory()
+        try Data("not a keyed archive".utf8).write(to: dir.appendingPathComponent(LegacyData.secretsFileName))
+        do {
+            try environment(dir).prepareDataDirectory()
+            Issue.record("an unreadable gp.secrets must stop startup")
+        } catch let error as UnreadableDataFileError {
+            #expect(error.file.lastPathComponent == LegacyData.secretsFileName)
+        }
+        // An empty accounts.json here would mean the accounts are never migrated.
+        #expect(!FileManager.default.fileExists(atPath: dir.appendingPathComponent(AccountStore.fileName).path))
     }
 
     @Test func tightensLegacyPermissionsWithoutTouchingContents() throws {
@@ -204,7 +230,7 @@ struct MigrationCheckTests {
 struct AccountEditingTests {
     func store(_ names: [String]) throws -> (AccountStore, URL) {
         let dir = try makeTempDirectory()
-        let store = AccountStore(directory: dir)
+        let store = try AccountStore(directory: dir)
         for name in names { try store.add(name: name, url: validURL) }
         return (store, dir)
     }
@@ -212,7 +238,7 @@ struct AccountEditingTests {
     @Test func renamePersistsAndKeepsPosition() throws {
         let (store, dir) = try store(["a", "b", "c"])
         try store.rename(id: store.accounts[1].id, to: "  B2 ")
-        #expect(AccountStore(directory: dir).accounts.map(\.name) == ["a", "B2", "c"])
+        #expect(try AccountStore(directory: dir).accounts.map(\.name) == ["a", "B2", "c"])
     }
 
     @Test func renameToOwnNameIsAllowed() throws {
@@ -247,7 +273,7 @@ struct AccountEditingTests {
     func moveMatchesSwiftUISemantics(source: IndexSet, destination: Int, expected: [String]) throws {
         let (store, dir) = try store(["a", "b", "c"])
         try store.move(fromOffsets: source, toOffset: destination)
-        #expect(AccountStore(directory: dir).accounts.map(\.name) == expected)
+        #expect(try AccountStore(directory: dir).accounts.map(\.name) == expected)
     }
 
     @Test func unknownIDThrows() throws {

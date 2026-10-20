@@ -6,15 +6,20 @@ public enum LegacyData {
     public static let secretsFileName = "gp.secrets"
     public static let configFileName = "config.plist"
 
+    /// Throws `UnreadableDataFileError`, so messages name the file that failed.
     public static func readDictionary(at url: URL) throws -> [String: String] {
-        let data = try Data(contentsOf: url)
-        let object = try NSKeyedUnarchiver.unarchivedObject(
-            ofClasses: [NSDictionary.self, NSMutableDictionary.self, NSString.self, NSMutableString.self],
-            from: data)
-        guard let dictionary = object as? [String: String] else {
-            throw CocoaError(.fileReadCorruptFile)
+        do {
+            let data = try Data(contentsOf: url)
+            let object = try NSKeyedUnarchiver.unarchivedObject(
+                ofClasses: [NSDictionary.self, NSMutableDictionary.self, NSString.self, NSMutableString.self],
+                from: data)
+            guard let dictionary = object as? [String: String] else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return dictionary
+        } catch {
+            throw UnreadableDataFileError(file: url, underlying: error)
         }
-        return dictionary
     }
 
     /// Writes the format the old app can import, so exports stay usable both ways.

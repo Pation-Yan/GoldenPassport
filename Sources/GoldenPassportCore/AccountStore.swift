@@ -49,9 +49,21 @@ public final class AccountStore: @unchecked Sendable {
     private let lock = NSLock()
     private var storage: [Account]
 
-    public init(directory: URL) {
+    /// Throws `UnreadableDataFileError` if the file exists but cannot be read: starting
+    /// with an empty list would overwrite the user's accounts on the next save.
+    public init(directory: URL) throws {
         fileURL = directory.appendingPathComponent(Self.fileName)
-        storage = Self.load(from: fileURL)
+        storage = try Self.load(from: fileURL)
+    }
+
+    /// The accounts stored in `url`, or none if the file does not exist.
+    public static func load(from url: URL) throws -> [Account] {
+        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+        do {
+            return try JSONDecoder().decode([Account].self, from: Data(contentsOf: url))
+        } catch {
+            throw UnreadableDataFileError(file: url, underlying: error)
+        }
     }
 
     public var accounts: [Account] {
@@ -174,10 +186,16 @@ public final class AccountStore: @unchecked Sendable {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try FileStorage.writeProtected(try encoder.encode(storage), to: fileURL)
     }
+}
 
-    private static func load(from url: URL) -> [Account] {
-        guard let data = try? Data(contentsOf: url) else { return [] }
-        return (try? JSONDecoder().decode([Account].self, from: data)) ?? []
+/// A data file exists but cannot be read. Callers stop rather than carry on as if it
+/// were empty, so the file is never overwritten and its accounts are never skipped.
+public struct UnreadableDataFileError: LocalizedError {
+    public let file: URL
+    public let underlying: Error
+
+    public var errorDescription: String? {
+        String(localized: "无法读取 \(file.lastPathComponent)：\(underlying.localizedDescription)")
     }
 }
 

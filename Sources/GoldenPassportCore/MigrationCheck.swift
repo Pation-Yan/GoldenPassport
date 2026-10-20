@@ -31,9 +31,7 @@ public struct MigrationCheck: Equatable, Sendable {
 
         try environment.prepareDataDirectory()
 
-        let accounts: [Account] = fm.fileExists(atPath: accountsURL.path)
-            ? try JSONDecoder().decode([Account].self, from: Data(contentsOf: accountsURL))
-            : []
+        let accounts = try AccountStore.load(from: accountsURL)
         let legacy = fm.fileExists(atPath: legacyURL.path) ? try LegacyData.readDictionary(at: legacyURL) : nil
 
         let status: Status = hadAccounts ? .alreadyMigrated : (legacy == nil ? .noData : .migrated)

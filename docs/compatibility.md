@@ -38,7 +38,7 @@ GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁
 
 ## 2. 现有的保护
 
-- **读不懂就停下**：启动时如果 `accounts.json` 存在但无法解析，程序会提示错误并退出，不会把它当成空列表，也就不会在下次保存时覆盖它（`AppEnvironment.prepareDataDirectory`，测试为 `corruptAccountsFileIsAnError`）。
+- **读不懂就停下**：启动时如果 `accounts.json` 存在但无法解析，程序会提示错误并退出，不会把它当成空列表，也就不会在下次保存时覆盖它。`AccountStore` 本身也会报错，不会返回空列表。还没迁移时，读不懂 `gp.secrets` 同样会停下，否则会生成一个空的 `accounts.json`，账号就再也不会迁移过来（`AccountStore.load`、`AppEnvironment.prepareDataDirectory`，测试为 `corruptAccountsFileIsAnError`、`unreadableFileThrowsAndIsLeftAlone`、`unreadableLegacyFileStopsMigration`）。
 - **旧文件内容不变**：从 0.1.x 迁移时生成新的 `accounts.json`，`gp.secrets` 的内容保持原样（只收紧权限），所以装回 0.1.x 仍能看到迁移那一刻的全部账号。
 - **安装前备份**：`install.sh` 会先完整备份 App 和数据目录，迁移后逐条核对，核对失败就自动恢复；`rollback.sh` 可以恢复备份。
 - **回退提醒**：`rollback.sh` 回退后，如果数据目录里有 `accounts.json`，会提醒用户：新版里新增或修改的账号旧版看不到，需要的话先在新版里导出 `.secrets`，再导入旧版。
@@ -167,7 +167,7 @@ GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁
 | # | 事项 | 时机 | 状态 |
 |---|---|---|---|
 | I1 | **启动失败提示更明确**：说明文件没有被改动、为什么不启动，提供「在 Finder 中显示」和帮助链接。帮助里写清楚恢复方法：用备份里的 `accounts.json` 替换，或者导入之前导出的文件。**不要建议 `rollback.sh --restore-data`**：它会把 App 降回安装前的版本，并把整个数据目录恢复到安装前，之后的改动全部丢失 | 正式发布前 | 待实施 |
-| I2 | **`AccountStore` 自身不再把读不懂的文件当成空列表**，改为抛出错误。启动检查已经能拦住这种情况，这一条是额外的保险，防止以后有代码绕过启动检查直接创建 `AccountStore` | 正式发布前 | 待实施 |
+| I2 | **`AccountStore` 自身不再把读不懂的文件当成空列表**，改为抛出错误。启动检查已经能拦住这种情况，这一条是额外的保险，防止以后有代码绕过启动检查直接创建 `AccountStore` | 正式发布前 | 已完成 |
 | I3 | 「检查更新」读取 `compat.json`，按第 5 节的规则提示（D2 的一部分） | D2 | 待实施 |
 | I4 | 发布流程（C3）加上第 6 节的检查清单；第一个 Release 附带 `compat.json`（`dataFormat: 1`） | C3 | 待实施 |
 | I5 | 出现新格式文件后，`rollback.sh` 给出 3.3 的提醒 | 第一次不可逆变更时 | 待实施 |

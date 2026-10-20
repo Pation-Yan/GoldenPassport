@@ -65,13 +65,12 @@ public struct AppEnvironment: Sendable {
             try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         }
 
-        // AccountStore treats an unreadable file as empty and would overwrite it on the
-        // next save; refuse to start instead so the user's data survives.
-        if fm.fileExists(atPath: accountsURL.path) {
-            _ = try JSONDecoder().decode([Account].self, from: Data(contentsOf: accountsURL))
-        }
+        // Refuse to start on an unreadable accounts.json rather than risk overwriting it.
+        _ = try AccountStore.load(from: accountsURL)
 
         if !fm.fileExists(atPath: accountsURL.path), fm.fileExists(atPath: legacySecretsURL.path) {
+            // An unreadable gp.secrets stops startup too: carrying on would create an empty
+            // accounts.json, and the accounts would never be migrated.
             let legacy = try LegacyData.readDictionary(at: legacySecretsURL)
             try AccountStore(directory: dataDirectory).replaceAll(with: LegacyData.accounts(from: legacy))
 

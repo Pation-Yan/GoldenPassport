@@ -40,8 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = makeMainMenu()
 
         let environment = AppEnvironment.fromBundle()
+        let store: AccountStore
         do {
             try environment.prepareDataDirectory()
+            store = try AccountStore(directory: environment.dataDirectory)
         } catch {
             let alert = NSAlert()
             alert.alertStyle = .critical
@@ -52,7 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         statusMenuController = StatusMenuController(
-            store: AccountStore(directory: environment.dataDirectory),
+            store: store,
             settings: SettingsStore(directory: environment.dataDirectory, defaults: environment.defaults))
     }
 
