@@ -1,18 +1,3 @@
----
-report-title: GoldenPassport 数据与接口兼容策略
-report-date: 2026-10-21
-report-cloud:
-report-account:
-report-category: 设计规范
-report-tags: GoldenPassport,兼容性,数据格式,迁移,版本发布
-report-summary: 规定 GoldenPassport 的数据文件、设置、导出格式和 HTTP 接口怎样演进，不可逆变更如何迁移、如何在发布和检查更新时提示用户
-report-author: stephen
-report-model: claude-opus-5-5
-report-tool: claude-code
-report-version: 3
-report-iteration: I6 实施后更新
----
-
 # 数据与接口兼容策略
 
 GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁在自己的账号外面。所以任何版本的改动，都要先回答两个问题：**升级后旧数据还在不在**、**回退到旧版本后数据还在不在**。

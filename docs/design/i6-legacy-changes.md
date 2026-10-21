@@ -1,18 +1,3 @@
----
-report-title: I6 设计：发现回退期间在 0.1.x 里做的改动
-report-date: 2026-10-21
-report-cloud:
-report-account:
-report-category: 设计文档
-report-tags: GoldenPassport,I6,数据迁移,回退,兼容性
-report-summary: 用户回退到 0.1.x 改了账号、再升级回 0.2.x 时，这些改动目前会被悄悄忽略，清理脚本还可能把它们永久删掉；本文设计记录迁移基线、启动时比对并提示导入的方案
-report-author: stephen
-report-model: claude-opus-5-5
-report-tool: claude-code
-report-version: 3
-report-iteration: 实施后按最终界面更新
----
-
 # I6 设计：发现回退期间在 0.1.x 里做的改动
 
 对应 [兼容策略](../compatibility.md) 第 3.3 节和第 7 节的 I6。
