@@ -46,10 +46,11 @@ die() { printf '\n%s %s\n' "$(say '[失败]' '[FAILED]')" "$(say "$@")" >&2; exi
 plist_value() { /usr/libexec/PlistBuddy -c "Print :$2" "$1/Contents/Info.plist" 2>/dev/null || true; }
 
 describe_app() {
-  local app="$1"
+  local app="$1" label
   [ -d "$app" ] || { say "未安装" "not installed"; return; }
   if [ -n "$(plist_value "$app" GPDataDirectoryName)" ]; then
-    echo "$(plist_value "$app" CFBundleShortVersionString) (build $(plist_value "$app" CFBundleVersion))"
+    label="$(plist_value "$app" GPPrerelease)"   # beta packages, e.g. 0.2.0-beta.3
+    echo "$(plist_value "$app" CFBundleShortVersionString)${label:+-$label} (build $(plist_value "$app" CFBundleVersion))"
   else
     say "0.1.x 旧版" "0.1.x"
   fi

@@ -3,12 +3,15 @@
 #   scripts/build-app.sh dev       isolated build: own bundle id, data dir, port; hotkeys off
 #   scripts/build-app.sh release   drop-in replacement for the installed app
 # ARCHS="arm64 x86_64" builds a universal binary (default: arm64).
+# PRERELEASE=beta.3 marks a pre-release: the app then reports 0.2.0-beta.3, so its update
+# check offers 0.2.0 itself (Info.plist GPPrerelease; CFBundleShortVersionString stays 0.2.0).
 set -euo pipefail
 
 VARIANT="${1:-dev}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_ROOT="${BUILD_ROOT:-$HOME/Library/Caches/GoldenPassport-build}"
 ARCHS="${ARCHS:-arm64}"
+PRERELEASE="${PRERELEASE:-}"
 VERSION="$(cat "$ROOT/VERSION")"
 BUILD_NUMBER="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 1)"
 
@@ -84,10 +87,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+[ -z "$PRERELEASE" ] || /usr/libexec/PlistBuddy -c "Add :GPPrerelease string $PRERELEASE" "$APP/Contents/Info.plist"
 
 xattr -cr "$APP"
 codesign --force --options runtime --timestamp=none --sign - "$APP"
 codesign --verify --strict "$APP"
 
 echo "Built $APP"
-echo "  archs: $(lipo -archs "$APP/Contents/MacOS/$EXECUTABLE")  version: $VERSION ($BUILD_NUMBER)  bundle id: $BUNDLE_ID"
+echo "  archs: $(lipo -archs "$APP/Contents/MacOS/$EXECUTABLE")  version: $VERSION${PRERELEASE:+-$PRERELEASE} ($BUILD_NUMBER)  bundle id: $BUNDLE_ID"

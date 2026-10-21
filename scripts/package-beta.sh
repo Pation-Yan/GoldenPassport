@@ -2,6 +2,7 @@
 # Builds a universal release and bundles it with the install/rollback scripts
 # for testers:  scripts/package-beta.sh [label]   (default label: beta)
 # Output: $BUILD_ROOT/dist/GoldenPassport-<version>-<label>.zip
+# The app reports <version>-<label>, so testers are offered <version> once it is released.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -9,7 +10,7 @@ BUILD_ROOT="${BUILD_ROOT:-$HOME/Library/Caches/GoldenPassport-build}"
 LABEL="${1:-beta}"
 NAME="GoldenPassport-$(cat "$ROOT/VERSION")-$LABEL"
 
-ARCHS="arm64 x86_64" BUILD_ROOT="$BUILD_ROOT" "$ROOT/scripts/build-app.sh" release
+ARCHS="arm64 x86_64" BUILD_ROOT="$BUILD_ROOT" PRERELEASE="$LABEL" "$ROOT/scripts/build-app.sh" release
 
 STAGE="$BUILD_ROOT/dist/$NAME"
 rm -rf "$STAGE" "$STAGE.zip"

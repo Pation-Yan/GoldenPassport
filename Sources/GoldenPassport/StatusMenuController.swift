@@ -65,8 +65,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         self.settings = settings
         self.dataDirectory = dataDirectory
         hotkeys = HotkeyMonitor(store: store)
-        appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
-        updateChecker = UpdateChecker(currentVersion: AppVersion(appVersion) ?? AppVersion("0")!,
+        let version = AppVersion(bundleInfo: Bundle.main.infoDictionary ?? [:]) ?? AppVersion("0")!
+        appVersion = version.description
+        updateChecker = UpdateChecker(currentVersion: version,
                                       fetch: UpdateChecker.networkFetch(appVersion: appVersion))
         super.init()
 

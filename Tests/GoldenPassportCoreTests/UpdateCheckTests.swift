@@ -21,6 +21,13 @@ struct AppVersionTests {
         }
         #expect(AppVersion("1.0") == AppVersion("v1.0.0"))
     }
+
+    @Test func betaPackagesAddTheirLabel() {
+        #expect(AppVersion(bundleInfo: ["CFBundleShortVersionString": "0.2.0", "GPPrerelease": "beta.3"])?.description == "0.2.0-beta.3")
+        #expect(AppVersion(bundleInfo: ["CFBundleShortVersionString": "0.2.0"])?.description == "0.2.0")
+        #expect(AppVersion(bundleInfo: ["CFBundleShortVersionString": "0.2.0", "GPPrerelease": ""])?.description == "0.2.0")
+        #expect(AppVersion(bundleInfo: [:]) == nil)
+    }
 }
 
 struct UpdateCheckerTests {
@@ -58,6 +65,15 @@ struct UpdateCheckerTests {
     func sameOrOlderReleaseIsUpToDate(tag: String) async throws {
         let checker = try Self.checker(current: "0.2.0", Self.latest(tag, compat: #"{"dataFormat":1}"#))
         #expect(try await checker.check() == .upToDate)
+    }
+
+    @Test func betaIsOfferedTheReleaseItLeadsUpTo() async throws {
+        let checker = try Self.checker(current: "0.2.0-beta.3", Self.latest("v0.2.0", compat: #"{"dataFormat":1}"#))
+        guard case .available(let update) = try await checker.check() else {
+            Issue.record("expected an update")
+            return
+        }
+        #expect(update.version == "0.2.0")
     }
 
     @Test func newerReleaseInTheSameFormatHasNoNotices() async throws {

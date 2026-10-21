@@ -54,6 +54,8 @@ jobs:
           test -f "$APP/Contents/Resources/en.lproj/Localizable.stringsdict"
           test -f "$APP/Contents/Resources/zh-Hans.lproj/Localizable.strings"
           test -f "$APP/Contents/Resources/LICENSE"
+          # Beta packages report <version>-<label>, so the update check offers the release.
+          test "$(/usr/libexec/PlistBuddy -c 'Print :GPPrerelease' "$APP/Contents/Info.plist")" = beta
           # Headless migration check against an empty data directory.
           "$APP/Contents/MacOS/GoldenPassport" --migrate-data --data-dir "$RUNNER_TEMP/gp-data"
       - name: Verify package

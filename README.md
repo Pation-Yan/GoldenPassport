@@ -87,7 +87,7 @@ Compared with the original 0.1.7 release.
   otpauth URL (SHA1 / SHA256 / SHA512, 6–8 digits), verified against the RFC 6238 test vectors.
 - Accounts are stored as an ordered list (`accounts.json`) instead of a dictionary whose order
   changed on every launch.
-- 76 unit tests cover TOTP, URL parsing, storage, migration, the HTTP API, the update check and
+- 78 unit tests cover TOTP, URL parsing, storage, migration, the HTTP API, the update check and
   the translations.
 
 ### New features
@@ -334,6 +334,8 @@ make beta      # universal release + install.sh / rollback.sh / tester notes, zi
 Apps are written to `~/Library/Caches/GoldenPassport-build/<variant>/` (kept out of the
 source tree because iCloud-synced folders break code signing). `ARCHS="arm64 x86_64"`
 builds a universal binary. Builds are ad-hoc signed with the hardened runtime.
+`scripts/package-beta.sh beta.3` packages a numbered beta. A beta build reports itself as
+`0.2.0-beta.3`, so once `0.2.0` is released, its update check offers it.
 
 On first launch, data from 0.1.x (`gp.secrets`, `config.plist`) is migrated to
 `accounts.json` / `settings.json` in the same directory; the legacy files are left in place

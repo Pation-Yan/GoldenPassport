@@ -63,7 +63,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 - 改用 Swift Package 构建，不再使用 Xcode 工程和 CocoaPods。原来的 Objective-C 验证码代码、内置的 google-toolbox-for-mac 源码和 Swifter HTTP 服务器都已移除。
 - TOTP 基于 CryptoKit 实现，支持 otpauth URL 中的 `algorithm`、`digits`、`period` 参数（SHA1 / SHA256 / SHA512，6–8 位），并通过了 RFC 6238 的标准测试向量。
 - 账号改为有序列表存储（`accounts.json`）。原来用的是字典，每次启动顺序都可能变。
-- 76 个单元测试，覆盖 TOTP、URL 解析、存储、数据迁移、HTTP 接口、检查更新和中英文翻译。
+- 78 个单元测试，覆盖 TOTP、URL 解析、存储、数据迁移、HTTP 接口、检查更新和中英文翻译。
 
 ### 新功能
 
@@ -228,7 +228,7 @@ make release   # 「GoldenPassport.app」，可直接替换已安装的正式版
 make beta      # 通用版 + install.sh / rollback.sh / 测试说明，打包为 zip，放在 dist/ 目录
 ```
 
-构建产物输出到 `~/Library/Caches/GoldenPassport-build/<variant>/`。之所以放在源码目录之外，是因为 iCloud 同步的目录会导致代码签名失败。`ARCHS="arm64 x86_64"` 可以构建通用版。构建出的 App 使用 ad-hoc 签名，并启用了 Hardened Runtime。
+构建产物输出到 `~/Library/Caches/GoldenPassport-build/<variant>/`。之所以放在源码目录之外，是因为 iCloud 同步的目录会导致代码签名失败。`ARCHS="arm64 x86_64"` 可以构建通用版。构建出的 App 使用 ad-hoc 签名，并启用了 Hardened Runtime。`scripts/package-beta.sh beta.3` 可以打出带编号的内测包。内测版会把自己的版本报告为 `0.2.0-beta.3`，所以正式版 `0.2.0` 发布后，检查更新会提示升级。
 
 首次启动时，0.1.x 的数据（`gp.secrets`、`config.plist`）会在同一目录下迁移为 `accounts.json` / `settings.json`，旧文件保留不动（见[数据与安全](#数据与安全)）。`GoldenPassport --migrate-data [--data-dir PATH]` 可以在不打开界面的情况下执行同样的迁移并核对结果，`scripts/install.sh` 就是靠它完成核对的。开发版会把正式版的数据复制到 `GoldenPassport-Dev/`，从不写入正式版的数据目录，所以可以和已安装的正式版同时运行。
 
