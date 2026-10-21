@@ -207,4 +207,14 @@ enum FileStorage {
         try data.write(to: url, options: .atomic)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
+
+    /// Where a file that can't be read is moved to instead of being overwritten:
+    /// `<name>.unreadable-<time>` next to it.
+    static func keptCopy(of url: URL) -> URL {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        return url.deletingLastPathComponent()
+            .appendingPathComponent("\(url.lastPathComponent).unreadable-\(formatter.string(from: Date()))")
+    }
 }

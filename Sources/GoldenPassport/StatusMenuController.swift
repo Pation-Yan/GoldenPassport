@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 final class StatusMenuController: NSObject, NSMenuDelegate {
     private let store: AccountStore
     private let settings: SettingsStore
+    private let dataDirectory: URL
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let menu = NSMenu()
     private let hotkeys: HotkeyMonitor
@@ -21,8 +22,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private var hotkeyChoiceItems: [NSMenuItem] = []
     private var launchAtLoginItem: NSMenuItem!
     private var languageChoiceItems: [NSMenuItem] = []
+    private let legacyItem = NSMenuItem()
     private let updateItem = NSMenuItem()
-    private let updateSeparator = NSMenuItem.separator()
+    private let noticeSeparator = NSMenuItem.separator()
     private var automaticUpdatesItem: NSMenuItem!
 
     private var refreshTimer: Timer?
@@ -34,6 +36,8 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private var availableUpdate: AvailableUpdate?
     private var lastUpdateCheck: Date?
     private var updateTimer: Timer?
+    /// Changes made in 0.1.x after the migration that the user hasn't dealt with yet (I6).
+    private var legacyChanges: LegacyChanges?
 
     private lazy var addWindow = AddAccountWindowController(store: store) { [weak self] in
         self?.rebuildMenu()
@@ -48,10 +52,18 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }) { [weak self] port in
         self?.changeHTTPPort(port)
     }
+    private lazy var legacyWindow = LegacyChangesWindowController(changes: { [weak self] in
+        self?.legacyChanges
+    }, onImport: { [weak self] names in
+        self?.importLegacyChanges(names)
+    }, onAcknowledge: { [weak self] in
+        self?.acknowledgeLegacyChanges()
+    })
 
-    init(store: AccountStore, settings: SettingsStore) {
+    init(store: AccountStore, settings: SettingsStore, dataDirectory: URL) {
         self.store = store
         self.settings = settings
+        self.dataDirectory = dataDirectory
         hotkeys = HotkeyMonitor(store: store)
         appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
         updateChecker = UpdateChecker(currentVersion: AppVersion(appVersion) ?? AppVersion("0")!,
@@ -78,6 +90,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         if settings.httpServerAutoStart { startHTTPServer() }
         applyHotkeySettings()
         scheduleUpdateChecks(firstCheckIn: 60)
+        checkLegacyChanges()
     }
 
     func shutdown() {
@@ -88,14 +101,20 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     // MARK: - Menu construction
 
     private func buildStaticItems() {
-        // Shown at the very top once a check finds a newer release.
+        // Shown at the very top while changes made in 0.1.x await the user, and once a check
+        // finds a newer release.
+        legacyItem.target = self
+        legacyItem.action = #selector(legacyItemClicked)
+        legacyItem.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
+        legacyItem.isHidden = true
         updateItem.target = self
         updateItem.action = #selector(updateItemClicked)
         updateItem.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
         updateItem.isHidden = true
-        updateSeparator.isHidden = true
+        noticeSeparator.isHidden = true
+        menu.addItem(legacyItem)
         menu.addItem(updateItem)
-        menu.addItem(updateSeparator)
+        menu.addItem(noticeSeparator)
 
         timerItem.isEnabled = false
         menu.addItem(timerItem)
@@ -243,13 +262,17 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         }
     }
 
-    private func refreshUpdateItems() {
+    private func refreshNoticeItems() {
         automaticUpdatesItem.state = settings.automaticUpdateChecks ? .on : .off
+        legacyItem.isHidden = legacyChanges == nil
+        if let legacyChanges {
+            legacyItem.title = String(localized: "处理旧版本的改动（\(legacyChanges.imports.count + legacyChanges.removed.count)）…")
+        }
         updateItem.isHidden = availableUpdate == nil
-        updateSeparator.isHidden = availableUpdate == nil
         if let availableUpdate {
             updateItem.title = String(localized: "新版本 \(availableUpdate.version) 可用…")
         }
+        noticeSeparator.isHidden = legacyItem.isHidden && updateItem.isHidden
     }
 
     // MARK: - NSMenuDelegate
@@ -257,7 +280,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         rebuildMenu()
         refreshHTTPItems()
-        refreshUpdateItems()
+        refreshNoticeItems()
         let timer = Timer(timeInterval: 1, target: self, selector: #selector(refreshCodes), userInfo: nil, repeats: true)
         RunLoop.main.add(timer, forMode: .common)
         refreshTimer = timer
@@ -605,6 +628,48 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         activateApp()
         if alert.runModal() == .alertFirstButtonReturn {
             NSWorkspace.shared.open(page)
+        }
+    }
+
+    // MARK: - Changes made in 0.1.x (I6)
+
+    /// After rollback.sh, accounts may have been added or changed in 0.1.x, which 0.2.x never
+    /// picks up on its own. The window opens at launch; "later" leaves an item in the menu.
+    private func checkLegacyChanges() {
+        guard let changes = LegacyChanges.detect(in: dataDirectory, accounts: store.accounts) else { return }
+        if changes.isEmpty {
+            // gp.secrets changed, but this version already has everything worth asking about.
+            try? changes.acknowledge(in: dataDirectory)
+        } else {
+            legacyChanges = changes
+            DispatchQueue.main.async { self.legacyWindow.present() }
+        }
+    }
+
+    @objc private func legacyItemClicked() {
+        legacyWindow.present()
+    }
+
+    private func importLegacyChanges(_ names: Set<String>) {
+        guard let changes = legacyChanges else { return }
+        do {
+            let added = try changes.importAccounts(named: names, into: store, directory: dataDirectory)
+            legacyChanges = nil
+            rebuildMenu()
+            showAlert(String(localized: "成功导入 \(added) 条记录"))
+        } catch {
+            rebuildMenu()
+            showAlert(String(localized: "导入失败"), informative: error.localizedDescription, style: .warning)
+        }
+    }
+
+    private func acknowledgeLegacyChanges() {
+        guard let changes = legacyChanges else { return }
+        do {
+            try changes.acknowledge(in: dataDirectory)
+            legacyChanges = nil
+        } catch {
+            showAlert(String(localized: "出错了"), informative: error.localizedDescription, style: .warning)
         }
     }
 

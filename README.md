@@ -87,7 +87,8 @@ Compared with the original 0.1.7 release.
   otpauth URL (SHA1 / SHA256 / SHA512, 6–8 digits), verified against the RFC 6238 test vectors.
 - Accounts are stored as an ordered list (`accounts.json`) instead of a dictionary whose order
   changed on every launch.
-- 62 unit tests cover TOTP, URL parsing, storage, migration, the HTTP API and the update check.
+- 76 unit tests cover TOTP, URL parsing, storage, migration, the HTTP API, the update check and
+  the translations.
 
 ### New features
 
@@ -102,6 +103,8 @@ Compared with the original 0.1.7 release.
   **Check for Updates Daily** does so once a day (off by default). If a release changes the data format or needs an
   intermediate upgrade first, the prompt says so before you install anything.
 - The account name is suggested from the otpauth URL label, and pasted URLs are trimmed ([#26](https://github.com/stanzhai/GoldenPassport/issues/26)).
+- **Rolling back is a round trip**: accounts you add or change in 0.1.x after rolling back are
+  listed when you upgrade again, and you choose which ones to import.
 
 ### Fixes
 
@@ -197,13 +200,19 @@ or changed in 0.2.0 are not visible to 0.1.x. To keep them, first export a `.sec
 from 0.2.0 and import it into 0.1.x. `bash rollback.sh --restore-data` also resets the data
 directory to its pre-install state.
 
+Accounts you add or change in 0.1.x after rolling back are not lost when you upgrade again:
+GoldenPassport lists what 0.1.x added, changed or deleted and lets you choose which accounts to
+import. It never overwrites or deletes the accounts you already have in 0.2.0; an account whose
+URL changed in 0.1.x is imported next to the existing one as "name (0.1.x)".
+
 ### Cleaning up after the upgrade
 
 Once 0.2.0 works for you and you no longer need to roll back, run `bash cleanup.sh` from the same
 folder. It checks that `accounts.json` reads back cleanly, lists what it will delete (the installer
 backups and the legacy `gp.secrets` / `config.plist`, all of which contain your secrets
-unencrypted), warns if 0.2.0 holds fewer accounts than the legacy file, and deletes only after you
-type `yes`. After that, rolling back to 0.1.x is no longer possible.
+unencrypted), warns if 0.2.0 holds fewer accounts than the legacy file or if accounts changed in
+0.1.x after a rollback haven't been imported yet (those files hold their only copies), and deletes
+only after you type `yes`. After that, rolling back to 0.1.x is no longer possible.
 
 ### Manual installation
 
@@ -273,7 +282,9 @@ echo "$code"
 All data lives in `~/Library/Application Support/GoldenPassport/` (`accounts.json`,
 `settings.json`, plus the legacy `gp.secrets` / `config.plist`). Secrets are stored
 unencrypted, protected only by file permissions: 0.2.x restricts the directory to `0700`
-and its files to `0600` (0.1.x left them readable by every local user).
+and its files to `0600` (0.1.x left them readable by every local user). After an upgrade from
+0.1.x, `legacy-baseline.json` records which accounts `gp.secrets` held, as names and URL
+fingerprints without any secrets, so that changes made in 0.1.x after a rollback can be found.
 
 ### If GoldenPassport can't read its data
 

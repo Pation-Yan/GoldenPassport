@@ -188,6 +188,21 @@ esac
 [ -f "$DATA_DIR/gp.secrets" ] && info "旧版数据文件 gp.secrets 未被改动，可随时回退" \
   "The 0.1.x data file gp.secrets is unchanged, so you can roll back at any time"
 
+# Accounts 0.1.x changed after the migration, e.g. after rollback.sh (names only).
+LEGACY_CHANGES="$(printf '%s\n' "$REPORT" | sed -n 's/^legacy_change=//p')"
+if [ -n "$LEGACY_CHANGES" ]; then
+  COUNT="$(printf '%s\n' "$LEGACY_CHANGES" | wc -l | tr -d ' ')"
+  info "回退期间，0.1.x 改动了 $COUNT 个账号，GoldenPassport 启动后会提示你处理：" \
+    "While you were back on 0.1.x, it changed $(plural "$COUNT" account accounts). GoldenPassport will ask you about them when it starts:"
+  printf '%s\n' "$LEGACY_CHANGES" | while IFS= read -r change; do
+    case "${change%%:*}" in
+      added) info "  • 新增：${change#*:}" "  • added: ${change#*:}" ;;
+      changed) info "  • 改过：${change#*:}" "  • changed: ${change#*:}" ;;
+      *) info "  • 删除：${change#*:}" "  • deleted: ${change#*:}" ;;
+    esac
+  done
+fi
+
 # --- 5. Launch --------------------------------------------------------------
 if [ "${GP_NO_LAUNCH:-0}" != "1" ]; then
   step "启动 GoldenPassport" "Starting GoldenPassport"

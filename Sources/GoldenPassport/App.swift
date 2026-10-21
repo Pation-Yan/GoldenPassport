@@ -51,7 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         statusMenuController = StatusMenuController(
             store: store,
-            settings: SettingsStore(directory: environment.dataDirectory, defaults: environment.defaults))
+            settings: SettingsStore(directory: environment.dataDirectory, defaults: environment.defaults),
+            dataDirectory: environment.dataDirectory)
     }
 
     /// For an unreadable data file, says that the file was left untouched and points to the recovery steps.

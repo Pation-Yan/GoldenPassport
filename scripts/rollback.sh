@@ -121,6 +121,8 @@ if [ $RESTORE_DATA = 0 ] && [ -f "$DATA_DIR/accounts.json" ]; then
     "The new version's accounts.json stays in the data folder. 0.1.x doesn't read it; the new version uses it again when you reinstall."
   info "在新版里新增或修改的记录，旧版看不到。需要的话，先在新版菜单里导出 .secrets，再导入旧版。" \
     "Accounts added or changed in the new version are not visible to 0.1.x. If you need them there, export a .secrets backup from the new version's menu and import it into 0.1.x."
+  info "反过来，回退后在旧版里做的改动，再次升级时 GoldenPassport 会提示你导入。" \
+    "The other way round, when you upgrade again, GoldenPassport offers to import the changes you make in 0.1.x from now on."
 fi
 
 if [ "${GP_NO_LAUNCH:-0}" != "1" ] && [ -d "$TARGET" ]; then

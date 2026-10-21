@@ -112,10 +112,8 @@ public final class SettingsStore {
     private func update(_ change: (inout Settings) -> Void) {
         change(&settings)
         if unreadableFileInPlace {
-            let kept = fileURL.deletingLastPathComponent()
-                .appendingPathComponent("\(Self.fileName).unreadable-\(Self.timestamp())")
             // If the file cannot be kept, leave it alone and keep this session's changes in memory.
-            guard (try? FileManager.default.moveItem(at: fileURL, to: kept)) != nil else { return }
+            guard (try? FileManager.default.moveItem(at: fileURL, to: FileStorage.keptCopy(of: fileURL))) != nil else { return }
             unreadableFileInPlace = false
         }
         let encoder = JSONEncoder()
@@ -123,12 +121,5 @@ public final class SettingsStore {
         if let data = try? encoder.encode(settings) {
             try? FileStorage.writeProtected(data, to: fileURL)
         }
-    }
-
-    private static func timestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        return formatter.string(from: Date())
     }
 }

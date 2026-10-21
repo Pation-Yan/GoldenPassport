@@ -63,7 +63,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 - 改用 Swift Package 构建，不再使用 Xcode 工程和 CocoaPods。原来的 Objective-C 验证码代码、内置的 google-toolbox-for-mac 源码和 Swifter HTTP 服务器都已移除。
 - TOTP 基于 CryptoKit 实现，支持 otpauth URL 中的 `algorithm`、`digits`、`period` 参数（SHA1 / SHA256 / SHA512，6–8 位），并通过了 RFC 6238 的标准测试向量。
 - 账号改为有序列表存储（`accounts.json`）。原来用的是字典，每次启动顺序都可能变。
-- 62 个单元测试，覆盖 TOTP、URL 解析、存储、数据迁移、HTTP 接口和检查更新。
+- 76 个单元测试，覆盖 TOTP、URL 解析、存储、数据迁移、HTTP 接口、检查更新和中英文翻译。
 
 ### 新功能
 
@@ -73,6 +73,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 - **开机自动启动**开关。
 - **检查更新**：「检查更新…」向 GitHub 查询有没有新版本，「每天自动检查更新」每天查询一次（默认关闭）。如果新版本会改变数据格式，或者需要先升级到某个中间版本，提示里会在安装前写明。
 - 添加账号时，会根据 otpauth URL 里的标签自动填写标识；粘贴的 URL 会自动去掉首尾空白（[#26](https://github.com/stanzhai/GoldenPassport/issues/26)）。
+- **回退之后还能再升级回来**：回退期间在 0.1.x 里新增或修改的账号，再次升级时会列出来，由你选择要导入哪些。
 
 ### 问题修复
 
@@ -140,9 +141,11 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 
 在同一个文件夹里执行 `bash rollback.sh`，就会恢复安装前的 App。原来的 `gp.secrets` 从未被修改过，所以 0.1.x 能看到原来的全部账号。在 0.2.0 里新增或修改的账号，0.1.x 看不到。如果要保留，先在 0.2.0 里导出 `.secrets` 备份文件，回退后再导入 0.1.x。执行 `bash rollback.sh --restore-data` 会把数据目录也恢复到安装前。
 
+回退之后在 0.1.x 里新增或修改的账号，再次升级时不会丢：GoldenPassport 会列出 0.1.x 新增、修改和删除的账号，由你选择要导入哪些。它不会覆盖或删除 0.2.0 里已有的账号；在 0.1.x 里改过 URL 的账号，会以「名称 (0.1.x)」导入，和原来的账号并存。
+
 ### 升级后的清理
 
-确认 0.2.0 使用正常、不再需要回退后，在同一个文件夹里执行 `bash cleanup.sh`。脚本会先确认 `accounts.json` 读取正常，再列出要删除的内容：安装备份，以及旧版的 `gp.secrets` / `config.plist`，这些都含有未加密的密钥。如果新版的账号比旧版数据文件里的少，会额外提醒。输入 `yes` 后才会删除。清理之后，就不能再回退到 0.1.x 了。
+确认 0.2.0 使用正常、不再需要回退后，在同一个文件夹里执行 `bash cleanup.sh`。脚本会先确认 `accounts.json` 读取正常，再列出要删除的内容：安装备份，以及旧版的 `gp.secrets` / `config.plist`，这些都含有未加密的密钥。如果新版的账号比旧版数据文件里的少，或者回退期间在 0.1.x 里改过的账号还没有导入（它们只存在于要删除的文件里），会额外提醒。输入 `yes` 后才会删除。清理之后，就不能再回退到 0.1.x 了。
 
 ### 手动安装
 
@@ -196,7 +199,7 @@ echo "$code"
 > - **导出文件**：`.secrets` 和 `.txt` 两种导出文件都包含未加密的全部密钥。
 > - **开发版**：`make dev` 首次启动时会把正式版的数据复制到 `GoldenPassport-Dev/`，开发结束后请删除这个目录。
 
-所有数据都在 `~/Library/Application Support/GoldenPassport/`：`accounts.json`、`settings.json`，以及旧版的 `gp.secrets` / `config.plist`。密钥没有加密，只靠文件权限保护：0.2.x 会把目录权限设为 `0700`、文件设为 `0600`（0.1.x 的文件本机所有用户都能读）。
+所有数据都在 `~/Library/Application Support/GoldenPassport/`：`accounts.json`、`settings.json`，以及旧版的 `gp.secrets` / `config.plist`。密钥没有加密，只靠文件权限保护：0.2.x 会把目录权限设为 `0700`、文件设为 `0600`（0.1.x 的文件本机所有用户都能读）。从 0.1.x 升级后，还会有一个 `legacy-baseline.json`，记录 `gp.secrets` 里有哪些账号（只有名称和 URL 的指纹，不含密钥），用来发现回退期间在 0.1.x 里做的改动。
 
 ### GoldenPassport 无法读取数据时
 

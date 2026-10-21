@@ -73,6 +73,10 @@ public struct AppEnvironment: Sendable {
             // accounts.json, and the accounts would never be migrated.
             let legacy = try LegacyData.readDictionary(at: legacySecretsURL)
             try AccountStore(directory: dataDirectory).replaceAll(with: LegacyData.accounts(from: legacy))
+            // What gp.secrets held at migration, so that accounts 0.1.x changes later (after a
+            // rollback) can be told apart from accounts deleted in 0.2.x (I6). Only a prompt
+            // depends on it, so failing to write it must not stop startup.
+            try? LegacyBaseline.record(legacy, in: dataDirectory)
 
             let settingsURL = dataDirectory.appendingPathComponent(SettingsStore.fileName)
             if !fm.fileExists(atPath: settingsURL.path) {
@@ -87,6 +91,13 @@ public struct AppEnvironment: Sendable {
                 if seedDirectory == nil, let port = config["http_server_port"].flatMap(Int.init) {
                     store.httpServerPort = port
                 }
+            }
+        } else if fm.fileExists(atPath: legacySecretsURL.path), (try? LegacyBaseline.load(from: dataDirectory)) == nil {
+            // Migrated before I6 (or the baseline can't be read): start from gp.secrets as it is
+            // now; earlier changes in 0.1.x can't be told apart any more. accounts.json holds the
+            // data now, so an unreadable gp.secrets is no reason to stop.
+            if let legacy = try? LegacyData.readDictionary(at: legacySecretsURL) {
+                try? LegacyBaseline.record(legacy, in: dataDirectory)
             }
         }
     }

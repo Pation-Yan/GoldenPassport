@@ -3,11 +3,14 @@
 # the user is happy with 0.2.x and no longer needs to roll back:
 #   - installer backups in ~/GoldenPassport-backups/
 #   - the legacy gp.secrets / config.plist in the data directory
+#     (and legacy-baseline.json, which only describes gp.secrets)
 #
 #   bash cleanup.sh [--yes]
 #
 # Refuses to run unless 0.2.x is installed and accounts.json reads back cleanly.
-# Afterwards rollback.sh can no longer restore 0.1.x.
+# Warns about accounts changed in 0.1.x after the migration that were never
+# imported: their only copies are about to be deleted. Afterwards rollback.sh can
+# no longer restore 0.1.x.
 #
 # Messages are in Simplified Chinese or English, like the app (see ui_language).
 # Environment overrides (for testing): GP_APPLICATIONS_DIR, GP_DATA_DIR, GP_BACKUP_ROOT,
@@ -101,6 +104,12 @@ for name in gp.secrets config.plist; do
   fi
 done
 [ ${#TARGETS[@]} -gt 0 ] || { info "没有需要清理的内容。" "Nothing to clean up."; exit 0; }
+# The record of what gp.secrets held (names and fingerprints, no secrets) goes with it.
+if [ -f "$DATA_DIR/gp.secrets" ] && [ -f "$DATA_DIR/legacy-baseline.json" ]; then
+  info "  同时删除 legacy-baseline.json：它只记录 gp.secrets 里的账号名称，不含密钥" \
+    "  Also deletes legacy-baseline.json, which only records the account names in gp.secrets, no secrets"
+  TARGETS+=("$DATA_DIR/legacy-baseline.json")
+fi
 
 if [ "$LEGACY" != "none" ] && [ "$CURRENT" -lt "$LEGACY" ]; then
   info ""
@@ -108,6 +117,24 @@ if [ "$LEGACY" != "none" ] && [ "$CURRENT" -lt "$LEGACY" ]; then
     "⚠️  gp.secrets holds $(plural "$LEGACY" account accounts), the new version only $CURRENT."
   info "    少的那些通常是你在新版里删掉的；清理后将无法再从旧版数据中找回。" \
     "    The missing ones are usually accounts you deleted in the new version; after the cleanup they can't be recovered from the 0.1.x data."
+fi
+
+# Accounts added or changed in 0.1.x after the migration (e.g. after rollback.sh) and never
+# imported: gp.secrets and the backups hold their only copies. Warn, but let the user decide.
+IMPORTS="$(report_value legacy_imports)"
+if [ "${IMPORTS:-0}" -gt 0 ] && [ -f "$DATA_DIR/gp.secrets" ]; then
+  info ""
+  info "⚠️  回退期间，0.1.x 新增或改过 $IMPORTS 个账号，还没有导入新版本：" \
+    "⚠️  Not imported into the new version yet: $(plural "$IMPORTS" account accounts) added or changed in 0.1.x after the upgrade:"
+  printf '%s\n' "$REPORT" | sed -n 's/^legacy_change=//p' | while IFS= read -r change; do
+    case "${change%%:*}" in
+      added|changed) info "      • ${change#*:}" ;;
+    esac
+  done
+  info "    它们的密钥只在 gp.secrets 和安装备份里，清理后将永久丢失。" \
+    "    Their secrets exist only in gp.secrets and the installer backups, so the cleanup deletes them for good."
+  info "    建议先打开 GoldenPassport，按提示导入，再运行清理。" \
+    "    Open GoldenPassport and import them when it asks, then run the cleanup again."
 fi
 info ""
 info "清理后：rollback.sh 无法再回退到旧版；新版的使用不受任何影响。" \

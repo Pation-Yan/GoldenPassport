@@ -121,3 +121,19 @@
 "GitHub 返回了错误（HTTP %lld），请稍后再试。" = "GitHub returned an error (HTTP %lld). Try again later.";
 "无法识别 GitHub 返回的内容。" = "GitHub's response couldn't be read.";
 "无法识别最新版本的版本号：%@" = "Unrecognized latest version number: %@";
+
+/* Accounts changed in 0.1.x after the migration (I6) */
+"旧版本的改动" = "Changes from 0.1.x";
+"回退期间，旧版本改动过账号" = "Accounts changed while you were back on 0.1.x";
+"你回退到 GoldenPassport 0.1.x 期间，它的数据文件 gp.secrets 有以下改动。新版本不会自动同步这些改动，请选择要导入的账号。" = "While you were back on GoldenPassport 0.1.x, it made the following changes to its data file, gp.secrets. They are not synced to this version automatically; choose the accounts to import.";
+"0.1.x 里新增" = "Added in 0.1.x";
+"0.1.x 里改过 URL" = "URL changed in 0.1.x";
+"将导入为「%@」，不会覆盖同名的现有账号" = "Will be imported as \"%@\" and won't replace the existing account with this name";
+"导入后，请确认原来的账号和带「(0.1.x)」的账号哪个能生成正确的验证码，再删掉另一个。" = "After importing, check whether the existing account or the one marked \"(0.1.x)\" generates the right codes, then delete the other one.";
+"以下账号在 0.1.x 里被删除了，但新版本里仍然保留。如果不再需要，可以在「管理」窗口里删除：%@" = "These accounts were deleted in 0.1.x but are still here. If you no longer need them, delete them in the Manage window: %@";
+"忽略这些改动" = "Ignore These Changes";
+"导入所选" = "Import Selected";
+"忽略这些改动？" = "Ignore these changes?";
+"忽略" = "Ignore";
+"以后不会再提示这些改动。它们仍保存在 gp.secrets 里，但运行 cleanup.sh 清理之后就无法再导入了。" = "You won't be asked about them again. They remain in gp.secrets, but can no longer be imported once cleanup.sh has deleted that file.";
+"处理旧版本的改动（%lld）…" = "Review Changes from 0.1.x (%lld)…";

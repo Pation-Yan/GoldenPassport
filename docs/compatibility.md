@@ -1,6 +1,6 @@
 ---
 report-title: GoldenPassport 数据与接口兼容策略
-report-date: 2026-10-20
+report-date: 2026-10-21
 report-cloud:
 report-account:
 report-category: 设计规范
@@ -9,8 +9,8 @@ report-summary: 规定 GoldenPassport 的数据文件、设置、导出格式和
 report-author: stephen
 report-model: claude-opus-5-5
 report-tool: claude-code
-report-version: 2
-report-iteration: 按 2026-10-20 审查意见修订
+report-version: 3
+report-iteration: I6 实施后更新
 ---
 
 # 数据与接口兼容策略
@@ -28,6 +28,7 @@ GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁
 | 账号数据 | 数据目录 `accounts.json` | 0.2.x 各版本 | **数据格式 1**：JSON 数组，元素为 `{id, name, url}` |
 | 设置 | 数据目录 `settings.json` | 0.2.x 各版本 | JSON 对象，所有字段可选 |
 | 旧版数据 | 数据目录 `gp.secrets`、`config.plist` | 0.1.x；0.2.x 的迁移逻辑 | **数据格式 0**：NSKeyedArchiver `[String: String]`。0.2.x 从不修改内容，只把权限收紧为 `0600` |
+| 旧版数据的基线 | 数据目录 `legacy-baseline.json` | 0.2.x 各版本 | JSON `{version: 1, source: "gp.secrets", recordedAt, entries: {名称: URL 指纹}}`，不含密钥和 URL（I6） |
 | 备份导出 | 用户保存的 `.secrets` | 0.1.x 和所有新版本的「导入」 | 与数据格式 0 相同 |
 | URL 列表导出 | 用户保存的 `.txt` | 任何支持 otpauth 的验证器 | 每行一条 otpauth URL |
 | HTTP 接口 | `GET /`、`GET /code/<名称>` | 用户脚本、浏览器 | `/code/` 返回纯文本验证码；找不到时返回 404 |
@@ -42,6 +43,7 @@ GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁
 - **旧文件内容不变**：从 0.1.x 迁移时生成新的 `accounts.json`，`gp.secrets` 的内容保持原样（只收紧权限），所以装回 0.1.x 仍能看到迁移那一刻的全部账号。
 - **安装前备份**：`install.sh` 会先完整备份 App 和数据目录，迁移后逐条核对，核对失败就自动恢复；`rollback.sh` 可以恢复备份。
 - **回退提醒**：`rollback.sh` 回退后，如果数据目录里有 `accounts.json`，会提醒用户：新版里新增或修改的账号旧版看不到，需要的话先在新版里导出 `.secrets`，再导入旧版。
+- **发现回退期间的改动**：从 0.1.x 迁移时记下 `gp.secrets` 的基线（每个账号的名称和 URL 指纹）。之后启动时如果 `gp.secrets` 和基线不同，就列出 0.1.x 新增、修改、删除的账号，由用户选择导入；导入只新增，不覆盖、不删除已有账号。`install.sh` 会列出这些改动，`cleanup.sh` 在删除前警告还没导入的账号（I6，测试见 `LegacyChangesTests`）。
 - **设置文件容错**：`settings.json` 逐项解析，读不懂的文件改名保留，HTTP 服务默认关闭（3.4，测试为 `unknownValueResetsOnlyThatSetting`、`unreadableFileIsKeptNotOverwritten`、`upgradeKeepsTheOldHTTPAutoStart`）。
 - **原子写入**：所有数据文件都先写到临时文件再替换，权限为 `0600`。程序崩溃不会留下写了一半的文件；断电等极端情况下仍可能留下不完整的文件，由「读不懂就停下」兜底。
 
@@ -77,7 +79,7 @@ GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁
 
 按 3.2 的规则，回退到旧版本后，旧版本读到的是**升级那一刻**的旧文件。也就是说，升级后新增、修改的账号，在旧版本里看不到。新版本里的数据仍然完整保留在新文件中，再次升级时会继续使用。
 
-反过来也一样：**回退后在旧版本里做的修改，再次升级时不会带到新版本**，因为迁移只在新文件不存在时进行一次。目前也没有任何提示，`install.sh` 只会显示「沿用已有数据：N 条记录」。0.1.x 和 0.2.x 之间现在就会出现这种情况，以后每次升级数据格式也一样，由 I6 解决。
+反过来也一样：迁移只在新文件不存在时进行一次，**回退后在旧版本里做的修改，不会自动带到新版本**。对 0.1.x 的做法是：迁移时记下旧文件的基线，之后启动时发现旧文件和基线不同，就列出这些改动，由用户选择导入，`install.sh` 和 `cleanup.sh` 也会提示（I6，见第 2 节）。以后每次升级数据格式，都要为被取代的旧文件做同样的事，`legacy-baseline.json` 的 `source` 字段就是为此预留的。
 
 需要配套做的事：
 
@@ -158,6 +160,7 @@ GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁
 - [ ] 这次改动是否涉及第 1 节的任何对象？涉及的话，属于 3.1 还是 3.2？
 - [ ] 不可逆变更：数据格式号、新文件名、迁移、核对和测试是否都已完成？
 - [ ] 不可逆变更：是否写了「升级须知」，并说明了回退后两个方向的行为（3.3）？
+- [ ] 不可逆变更：是否为被取代的旧文件记录基线，再次升级时能提示回退期间的改动（3.3）？
 - [ ] 改了默认值吗？已有用户的行为是否保持不变（3.4）？
 - [ ] tag 是否为 `vX.Y.Z`？预发布版本是否勾选了 pre-release？「latest」是否指向版本号最高的正式版？
 - [ ] 是否上传了 `compat.json`，内容是否和这个版本一致？
@@ -171,5 +174,5 @@ GoldenPassport 保存的是 MFA 密钥。数据一旦丢失，用户可能被锁
 | I3 | 「检查更新」读取 `compat.json`，按第 5 节的规则提示（D2 的一部分） | D2 | 已完成（`UpdateChecker`，测试见 `UpdateCheckTests`） |
 | I4 | 发布流程（C3）加上第 6 节的检查清单；第一个 Release 附带 `compat.json`（`dataFormat: 1`） | C3 | 待实施 |
 | I5 | 出现新格式文件后，`rollback.sh` 给出 3.3 的提醒 | 第一次不可逆变更时 | 待实施 |
-| I6 | **发现旧版本在迁移之后改过数据时，提醒用户**（3.3 的反方向）。思路：迁移时记下 `gp.secrets` 的校验值，之后启动或运行 `install.sh` 时发现它变了，就说明回退期间 0.1.x 改过数据，列出变化，由用户决定是否导入。具体交互另行设计，确认后再实施 | 正式发布前 | 待设计 |
+| I6 | **发现旧版本在迁移之后改过数据时，提醒用户**（3.3 的反方向）：迁移时记下 `gp.secrets` 的基线（名称和 URL 指纹）；启动时比对，列出 0.1.x 的改动，由用户选择导入；`install.sh` 列出改动，`cleanup.sh` 警告还没导入的账号 | 正式发布前 | 已完成（设计见 [i6-legacy-changes.md](design/i6-legacy-changes.md)，测试见 `LegacyChangesTests`） |
 | I7 | **设置文件按 3.4 处理**：HTTP 服务默认关闭（从 0.1.x 升级的用户保持原设置）；逐项解析；整个文件读不懂时改名保留 | 正式发布前 | 已完成 |
