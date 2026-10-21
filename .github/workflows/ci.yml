@@ -8,16 +8,28 @@ on:
 
 jobs:
   test:
+    name: test (${{ matrix.os }}${{ matrix.xcode && format(', Xcode {0}', matrix.xcode) || '' }})
     strategy:
       fail-fast: false
       matrix:
-        # Oldest supported toolchain (Xcode 16 / Swift 6) and the current one.
-        os: [macos-15, macos-26]
+        include:
+          # The oldest supported toolchain (README: Xcode 16+), so newer Swift can't slip in.
+          - os: macos-15
+            xcode: "16.0"
+          # Each image's default Xcode, up to the current one.
+          - os: macos-15
+          - os: macos-26
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+      - name: Select Xcode ${{ matrix.xcode }}
+        if: matrix.xcode
+        run: |
+          DIR="/Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer"
+          [ -d "$DIR" ] || { echo "::error::Xcode ${{ matrix.xcode }} is not on the ${{ matrix.os }} image"; exit 1; }
+          echo "DEVELOPER_DIR=$DIR" >> "$GITHUB_ENV"
       - name: Toolchain
-        run: xcrun swift --version
+        run: xcodebuild -version && xcrun swift --version
       - name: Unit tests
         run: make test
 
