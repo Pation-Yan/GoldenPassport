@@ -14,7 +14,7 @@ A native Google Authenticator for the macOS menu bar: TOTP codes one click (or o
 - Native Swift, **Apple Silicon native** (universal builds also run on Intel), macOS 13 or later
 - No third-party dependencies
 - English and Simplified Chinese interface: follows the system language, or pick one in the
-  menu under 语言 / Language
+  menu under Language / 语言
 
 # Screenshots
 
@@ -31,30 +31,40 @@ is listed as `name: code`; click a row to copy its code. The first ten accounts 
 hotkey on the right. Below the list are account management, the local HTTP API, hotkey settings,
 launch at login and update checks.
 
+<!-- SCREENSHOT screenshot/en/menu.png: the menu in the English UI with a few made-up accounts,
+     showing the Language / 语言, Check for Updates… and Check for Updates Daily items. Replace the
+     Chinese screenshot below with it. -->
 <img src="screenshot/menu.png" alt="Menu bar menu" width="380">
 
 ### Adding an account
 
-Choose 添加... (⌘A) and paste an `otpauth://` URL, or pick a QR code image with
-从二维码图片识别.... The name (标识) is filled in from the URL label; edit it before adding if you like.
+Choose **Add…** (⌘A) and paste an `otpauth://` URL, or pick a QR code image with
+**Read from QR Code Image…**. The **Name** is filled in from the URL label; edit it before adding
+if you like.
 
+<!-- SCREENSHOT screenshot/en/add-window.png: the Add Account window in the English UI. Replace
+     the Chinese screenshot below with it. -->
 <img src="screenshot/add-window.png" alt="Add an account" width="560">
 
 ### Managing accounts
 
-管理（排序 / 重命名）... (⌘M) lists every account in menu order. Drag rows or use the arrow buttons
-to reorder; the first ten rows show which hotkey they get. Double-click a row to rename it, or
-right-click for 重命名 (rename), 修改 URL (edit URL) and 删除 (delete); the same actions are
-available as buttons at the bottom.
+**Manage (Reorder / Rename)…** (⌘M) lists every account in menu order. Drag rows or use the arrow
+buttons to reorder; the first ten rows show which hotkey they get. Double-click a row to rename it,
+or right-click for **Rename…**, **Edit URL…** and **Delete…**; the same actions are available as
+buttons at the bottom.
 
+<!-- SCREENSHOT screenshot/en/manage-window.png: the Manage Accounts window in the English UI.
+     Replace the Chinese screenshot below with it. -->
 <img src="screenshot/manage-window.png" alt="Manage accounts" width="560">
 
 ### Hotkey settings
 
-The 全局快捷键 submenu sets the modifier keys used with 0–9: ⌃⌥⌘ (default), ⇧⌘ as in 0.1.x
-(3/4/5 clash with the system screenshot shortcuts), ⌃⌥, or 关闭 (off). The checkmark shows the
+The **Global Hotkeys** submenu sets the modifier keys used with 0–9: ⌃⌥⌘ (default), ⇧⌘ as in
+0.1.x (3/4/5 clash with the system screenshot shortcuts), ⌃⌥, or **Off**. The checkmark shows the
 current choice.
 
+<!-- SCREENSHOT screenshot/en/hotkeys.png: the Global Hotkeys submenu in the English UI. Replace
+     the Chinese screenshot below with it. -->
 <img src="screenshot/hotkeys.png" alt="Global hotkeys" width="640">
 
 ### Local HTTP API
@@ -88,15 +98,16 @@ Compared with the original 0.1.7 release.
 - **Export as an otpauth URL list** (`.txt`) that other authenticator apps can import; import
   accepts both this format and `.secrets` backups ([#10](https://github.com/stanzhai/GoldenPassport/issues/10), [#30](https://github.com/stanzhai/GoldenPassport/issues/30)).
 - **Launch at login** toggle.
-- **Update check**: 检查更新... asks GitHub whether a newer release is out, and 每天自动检查更新
-  does so once a day (off by default). If a release changes the data format or needs an
+- **Update check**: **Check for Updates…** asks GitHub whether a newer release is out, and
+  **Check for Updates Daily** does so once a day (off by default). If a release changes the data format or needs an
   intermediate upgrade first, the prompt says so before you install anything.
 - The account name is suggested from the otpauth URL label, and pasted URLs are trimmed ([#26](https://github.com/stanzhai/GoldenPassport/issues/26)).
 
 ### Fixes
 
 - Crashes when adding an account or reading a QR code image ([#1](https://github.com/stanzhai/GoldenPassport/issues/1), [#16](https://github.com/stanzhai/GoldenPassport/issues/16), [#21](https://github.com/stanzhai/GoldenPassport/issues/21), [#22](https://github.com/stanzhai/GoldenPassport/issues/22), [#25](https://github.com/stanzhai/GoldenPassport/issues/25), [#28](https://github.com/stanzhai/GoldenPassport/issues/28)).
-  Please reopen with details if you still see one.
+  If you still see one, please [open an issue](https://github.com/thatscode/GoldenPassport/issues)
+  with details.
 - ⌘V / ⌘C / ⌘A now work in text fields ([#9](https://github.com/stanzhai/GoldenPassport/issues/9)).
 - The HTTP index page declares UTF-8, so Chinese account names display correctly ([#26](https://github.com/stanzhai/GoldenPassport/issues/26)).
 - Duplicate names are rejected instead of silently overwriting an existing account.
@@ -108,7 +119,7 @@ Compared with the original 0.1.7 release.
 - The HTTP API is off on new installs. It has no password, so while it runs anything running as
   you on this Mac can read every code. Upgrades from 0.1.x keep their previous setting.
 - GoldenPassport goes online only to check for updates, and only when you ask it to: choose
-  检查更新..., or turn on 每天自动检查更新 (off by default). The check asks GitHub's API for the
+  **Check for Updates…**, or turn on **Check for Updates Daily** (off by default). The check asks GitHub's API for the
   latest release and, if it is newer, downloads that release's small `compat.json`. Requests
   identify themselves only as `GoldenPassport/<version>` and carry no cookies or account
   information. Nothing is downloaded or installed automatically.
@@ -168,9 +179,9 @@ The installer:
    only. **If anything does not match, it restores the previous app and data automatically**;
 5. starts GoldenPassport.
 
-<!-- SCREENSHOT install.png: Terminal after a successful install.sh run, showing the
-     "已从旧版迁移 N 条记录…逐条一致" line and the warning box. Crop out your username/paths
-     if you prefer. -->
+<!-- SCREENSHOT install.png: Terminal after a successful install.sh run in English, showing the
+     "Migrated N accounts from 0.1.x; every entry matches gp.secrets" line and the warning box.
+     Crop out your username/paths if you prefer. -->
 <!-- ![Installer output](screenshot/install.png) -->
 
 After upgrading, grant **Accessibility** again if you want hotkeys to type the code for you:
@@ -207,19 +218,19 @@ Click the key icon in the menu bar. Each account shows its current code; click o
 
 | Menu item | What it does |
 |---|---|
-| 添加... (⌘A) | Add an account from an otpauth URL or a QR code image |
-| 管理（排序 / 重命名）... (⌘M) | Reorder, rename, edit or delete accounts |
-| 删除 (⌘D) | Delete an account (asks for confirmation) |
-| 导入... (⌘I) | Import a `.secrets` backup or an otpauth URL list; existing names are skipped |
-| 导出 → 备份文件 (.secrets) | Backup readable by both 0.1.x and 0.2.x |
-| 导出 → otpauth URL 列表 (.txt) | One otpauth URL per account, for other authenticator apps |
-| HTTP 接口 | Start or stop the local API, start it at launch, open it in the browser, change the port |
-| 全局快捷键 | Choose the modifier keys for the hotkeys, or turn them off |
-| 开机自动启动 | Launch GoldenPassport at login |
-| 语言 / Language | Follow the system language, or always use 简体中文 or English (restarts the app) |
-| 检查更新... | Ask GitHub now whether a newer release is out |
-| 每天自动检查更新 | Check once a day; a newer release appears at the top of the menu (off by default) |
-| 帮助 (⌘H) | Open the project page on GitHub |
+| Add… (⌘A) | Add an account from an otpauth URL or a QR code image |
+| Manage (Reorder / Rename)… (⌘M) | Reorder, rename, edit or delete accounts |
+| Delete (⌘D) | Delete an account (asks for confirmation) |
+| Import… (⌘I) | Import a `.secrets` backup or an otpauth URL list; existing names are skipped |
+| Export → Backup File (.secrets) | Backup readable by both 0.1.x and 0.2.x |
+| Export → otpauth URL List (.txt) | One otpauth URL per account, for other authenticator apps |
+| HTTP API | Start or stop the local API, start it at launch, open it in the browser, change the port |
+| Global Hotkeys | Choose the modifier keys for the hotkeys, or turn them off |
+| Launch at Login | Launch GoldenPassport at login |
+| Language / 语言 | System Default, or always 简体中文 or English (restarts the app) |
+| Check for Updates… | Ask GitHub now whether a newer release is out |
+| Check for Updates Daily | Check once a day; a newer release appears at the top of the menu (off by default) |
+| Help (⌘H) | Open this README on GitHub, in the language the menu is in |
 
 ### Global hotkeys
 
@@ -231,7 +242,7 @@ ones get hotkeys.
 
 When enabled, GoldenPassport serves codes on `http://localhost:17304/` (the port can be changed
 in the menu). It listens on 127.0.0.1 only. The API is off on new installs: turn it on with
-开启 HTTP 服务, and check 启动时同时开启 HTTP 服务 to start it with the app.
+**Start HTTP Server**, and check **Start HTTP Server at Launch** to start it with the app.
 
 | Endpoint | Response |
 |---|---|
@@ -290,8 +301,12 @@ If the alert names `gp.secrets` instead, the 0.1.x data file is damaged and its 
 migrated. Move it out of the data folder, then restore your accounts from a backup or an export
 as above.
 
-When asking for help in an issue, include the alert text, but **never attach the data files**:
-they contain your secrets.
+When asking for help in an [issue](https://github.com/thatscode/GoldenPassport/issues), include
+the alert text, but **never attach the data files**: they contain your secrets.
+
+To report a security problem, please don't open a public issue: use
+[Report a vulnerability](https://github.com/thatscode/GoldenPassport/security/advisories/new) to
+tell the maintainers privately.
 
 # Building
 

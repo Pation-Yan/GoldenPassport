@@ -24,24 +24,28 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 
 点击菜单栏上的钥匙图标。第一行是验证码刷新的倒计时。每个账号显示为「名称: 验证码」，点击即可复制验证码。前 10 个账号右侧标出了对应的全局快捷键。列表下方依次是认证管理、HTTP 接口、全局快捷键、开机自动启动和检查更新。
 
+<!-- SCREENSHOT screenshot/menu.png：中文界面的菜单，用几个虚构的账号，要能看到「语言 / Language」「检查更新…」「每天自动检查更新」。直接覆盖这张图。 -->
 <img src="screenshot/menu.png" alt="菜单栏菜单" width="380">
 
 ### 添加账号
 
-选择「添加...」（⌘A），粘贴 `otpauth://` URL，或者点「从二维码图片识别...」选择一张二维码图片。标识会根据 URL 里的标签自动填写，添加前可以修改。
+选择「添加…」（⌘A），粘贴 `otpauth://` URL，或者点「从二维码图片识别…」选择一张二维码图片。标识会根据 URL 里的标签自动填写，添加前可以修改。
 
+<!-- SCREENSHOT screenshot/add-window.png：中文界面的「添加认证」窗口（按钮文字已改为「从二维码图片识别…」）。直接覆盖这张图。 -->
 <img src="screenshot/add-window.png" alt="添加账号" width="560">
 
 ### 管理账号
 
-「管理（排序 / 重命名）...」（⌘M）按菜单中的顺序列出所有账号。拖动或用上下箭头调整顺序，前 10 行会标出对应的快捷键。双击可以重命名；右键可以选择「重命名」「修改 URL」「删除」，底部也有同样的按钮。
+「管理（排序 / 重命名）…」（⌘M）按菜单中的顺序列出所有账号。拖动或用上下箭头调整顺序，前 10 行会标出对应的快捷键。双击可以重命名；右键可以选择「重命名」「修改 URL」「删除」，底部也有同样的按钮。
 
+<!-- SCREENSHOT screenshot/manage-window.png：中文界面的「管理认证」窗口（按钮文字已改为「重命名…」等）。直接覆盖这张图。 -->
 <img src="screenshot/manage-window.png" alt="管理账号" width="560">
 
 ### 快捷键设置
 
 在「全局快捷键」子菜单里选择配合 0–9 使用的修饰键：⌃⌥⌘（默认）、⇧⌘（0.1.x 的方式，其中 3/4/5 和系统截图快捷键冲突）、⌃⌥，或者关闭。打勾的是当前设置。
 
+<!-- SCREENSHOT screenshot/hotkeys.png：中文界面的「全局快捷键」子菜单。直接覆盖这张图。 -->
 <img src="screenshot/hotkeys.png" alt="全局快捷键" width="640">
 
 ### 本地 HTTP 接口
@@ -67,12 +71,12 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 - **全局快捷键可配置**：⌃⌥⌘0–9（新的默认值）、⇧⌘0–9（0.1.x 的方式）、⌃⌥0–9，或者关闭。改为系统级注册，按键不会再同时传给当前 App（[#4](https://github.com/stanzhai/GoldenPassport/issues/4)、[#11](https://github.com/stanzhai/GoldenPassport/issues/11)、[#18](https://github.com/stanzhai/GoldenPassport/issues/18)）。
 - **导出 otpauth URL 列表**（`.txt`），可以导入其他验证器 App。导入同时支持这种格式和 `.secrets` 备份文件（[#10](https://github.com/stanzhai/GoldenPassport/issues/10)、[#30](https://github.com/stanzhai/GoldenPassport/issues/30)）。
 - **开机自动启动**开关。
-- **检查更新**：「检查更新...」向 GitHub 查询有没有新版本，「每天自动检查更新」每天查询一次（默认关闭）。如果新版本会改变数据格式，或者需要先升级到某个中间版本，提示里会在安装前写明。
+- **检查更新**：「检查更新…」向 GitHub 查询有没有新版本，「每天自动检查更新」每天查询一次（默认关闭）。如果新版本会改变数据格式，或者需要先升级到某个中间版本，提示里会在安装前写明。
 - 添加账号时，会根据 otpauth URL 里的标签自动填写标识；粘贴的 URL 会自动去掉首尾空白（[#26](https://github.com/stanzhai/GoldenPassport/issues/26)）。
 
 ### 问题修复
 
-- 添加账号或识别二维码图片时闪退（[#1](https://github.com/stanzhai/GoldenPassport/issues/1)、[#16](https://github.com/stanzhai/GoldenPassport/issues/16)、[#21](https://github.com/stanzhai/GoldenPassport/issues/21)、[#22](https://github.com/stanzhai/GoldenPassport/issues/22)、[#25](https://github.com/stanzhai/GoldenPassport/issues/25)、[#28](https://github.com/stanzhai/GoldenPassport/issues/28)）。如果你仍然遇到，欢迎附上详情重新开 issue。
+- 添加账号或识别二维码图片时闪退（[#1](https://github.com/stanzhai/GoldenPassport/issues/1)、[#16](https://github.com/stanzhai/GoldenPassport/issues/16)、[#21](https://github.com/stanzhai/GoldenPassport/issues/21)、[#22](https://github.com/stanzhai/GoldenPassport/issues/22)、[#25](https://github.com/stanzhai/GoldenPassport/issues/25)、[#28](https://github.com/stanzhai/GoldenPassport/issues/28)）。如果你仍然遇到，欢迎附上详情到[本仓库的 Issues](https://github.com/thatscode/GoldenPassport/issues) 反馈。
 - 输入框里可以正常使用 ⌘V / ⌘C / ⌘A 了（[#9](https://github.com/stanzhai/GoldenPassport/issues/9)）。
 - HTTP 页面声明了 UTF-8 编码，中文账号名不再乱码（[#26](https://github.com/stanzhai/GoldenPassport/issues/26)）。
 - 重名时会提示，不再静默覆盖已有账号。
@@ -82,7 +86,7 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 ### 安全与隐私
 
 - 全新安装时 HTTP 接口默认关闭。它没有访问密码，开启期间，这台 Mac 上以你的身份运行的任何程序都能读取全部验证码。从 0.1.x 升级的用户保持原来的设置。
-- GoldenPassport 只在检查更新时联网，而且只在你要求时才检查：点「检查更新...」，或者打开「每天自动检查更新」（默认关闭）。检查时会向 GitHub 的接口查询最新版本；如果比当前版本新，还会下载这个版本附带的 `compat.json` 小文件。请求只以 `GoldenPassport/<版本号>` 标识自己，不带 Cookie，也不带任何账号信息。不会自动下载或安装新版本。
+- GoldenPassport 只在检查更新时联网，而且只在你要求时才检查：点「检查更新…」，或者打开「每天自动检查更新」（默认关闭）。检查时会向 GitHub 的接口查询最新版本；如果比当前版本新，还会下载这个版本附带的 `compat.json` 小文件。请求只以 `GoldenPassport/<版本号>` 标识自己，不带 Cookie，也不带任何账号信息。不会自动下载或安装新版本。
 - HTTP 接口只监听 127.0.0.1，并拒绝 `Host` 头不是本机的请求（[#6](https://github.com/stanzhai/GoldenPassport/issues/6)），网页无法通过 DNS 重绑定读取你的验证码。
 - 数据文件仅本人可读：数据目录权限为 `0700`，文件为 `0600`。0.1.x 的文件本机所有用户都能读，0.2.0 会收紧已有文件的权限，但不改动文件内容。
 - 两种导出格式在导出前都会提示：文件里是未加密的全部密钥。
@@ -150,19 +154,19 @@ macOS 菜单栏上的原生 Google Authenticator（谷歌身份验证器）。�
 
 | 菜单项 | 作用 |
 |---|---|
-| 添加...（⌘A） | 通过 otpauth URL 或二维码图片添加账号 |
-| 管理（排序 / 重命名）...（⌘M） | 调整顺序、重命名、修改 URL、删除账号 |
+| 添加…（⌘A） | 通过 otpauth URL 或二维码图片添加账号 |
+| 管理（排序 / 重命名）…（⌘M） | 调整顺序、重命名、修改 URL、删除账号 |
 | 删除（⌘D） | 删除账号，删除前会确认 |
-| 导入...（⌘I） | 导入 `.secrets` 备份文件或 otpauth URL 列表；已存在的名称会跳过 |
+| 导入…（⌘I） | 导入 `.secrets` 备份文件或 otpauth URL 列表；已存在的名称会跳过 |
 | 导出 → 备份文件（.secrets） | 新旧版本都能导入的备份 |
 | 导出 → otpauth URL 列表（.txt） | 每个账号一行 otpauth URL，可导入其他验证器 App |
 | HTTP 接口 | 开启或停止本地接口、设置随启动开启、在浏览器中打开、修改端口 |
 | 全局快捷键 | 选择快捷键的修饰键，或者关闭 |
 | 开机自动启动 | 登录时自动启动 GoldenPassport |
 | 语言 / Language | 跟随系统，或固定使用简体中文 / English（切换后会重启 App） |
-| 检查更新... | 立即向 GitHub 查询有没有新版本 |
+| 检查更新… | 立即向 GitHub 查询有没有新版本 |
 | 每天自动检查更新 | 每天查询一次，有新版本时显示在菜单最上方（默认关闭） |
-| 帮助（⌘H） | 打开 GitHub 项目主页 |
+| 帮助（⌘H） | 在 GitHub 上打开这份说明，语言和菜单一致 |
 
 ### 全局快捷键
 
@@ -205,7 +209,9 @@ echo "$code"
 
 如果提示里写的是 `gp.secrets`，说明 0.1.x 的数据文件损坏了，里面的账号无法迁移。把它移出数据目录，再按上面的方法用备份或导出文件恢复。
 
-到 issue 里求助时，可以附上提示框里的文字，但**不要附带数据文件**，里面有你的密钥。
+到 [Issues](https://github.com/thatscode/GoldenPassport/issues) 里求助时，可以附上提示框里的文字，但**不要附带数据文件**，里面有你的密钥。
+
+如果发现的是安全问题，请不要公开提 issue，而是通过 [Report a vulnerability](https://github.com/thatscode/GoldenPassport/security/advisories/new) 私下告诉维护者。
 
 # 从源码构建
 
