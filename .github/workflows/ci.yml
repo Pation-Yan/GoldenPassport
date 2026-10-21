@@ -38,7 +38,9 @@ jobs:
           codesign --verify --strict "$APP"
           lipo -archs "$APP/Contents/MacOS/GoldenPassport" | grep -q arm64
           lipo -archs "$APP/Contents/MacOS/GoldenPassport" | grep -q x86_64
-          test -d "$APP/Contents/Resources/en.lproj"
+          test -f "$APP/Contents/Resources/en.lproj/Localizable.strings"
+          test -f "$APP/Contents/Resources/en.lproj/Localizable.stringsdict"
+          test -f "$APP/Contents/Resources/zh-Hans.lproj/Localizable.strings"
           test -f "$APP/Contents/Resources/LICENSE"
           # Headless migration check against an empty data directory.
           "$APP/Contents/MacOS/GoldenPassport" --migrate-data --data-dir "$RUNNER_TEMP/gp-data"

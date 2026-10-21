@@ -104,14 +104,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(sectionHeader(String(localized: "认证管理")))
-        menu.addItem(item(String(localized: "添加..."), #selector(addClicked), key: "a"))
-        menu.addItem(item(String(localized: "管理（排序 / 重命名）..."), #selector(manageClicked), key: "m"))
+        menu.addItem(item(String(localized: "添加…"), #selector(addClicked), key: "a"))
+        menu.addItem(item(String(localized: "管理（排序 / 重命名）…"), #selector(manageClicked), key: "m"))
         deleteItem = add(item(String(localized: "删除"), #selector(deleteClicked), key: "d"))
-        menu.addItem(item(String(localized: "导入..."), #selector(importClicked), key: "i"))
+        menu.addItem(item(String(localized: "导入…"), #selector(importClicked), key: "i"))
         let exportItem = add(NSMenuItem(title: String(localized: "导出"), action: nil, keyEquivalent: ""))
         let exportMenu = NSMenu()
-        exportMenu.addItem(item(String(localized: "备份文件（.secrets，可导入新旧版本）..."), #selector(exportClicked), key: "e"))
-        exportMenu.addItem(item(String(localized: "otpauth URL 列表（.txt，可导入其他验证器）..."), #selector(exportURLListClicked)))
+        exportMenu.addItem(item(String(localized: "备份文件（.secrets，可导入新旧版本）…"), #selector(exportClicked), key: "e"))
+        exportMenu.addItem(item(String(localized: "otpauth URL 列表（.txt，可导入其他验证器）…"), #selector(exportURLListClicked)))
         exportItem.submenu = exportMenu
 
         menu.addItem(.separator())
@@ -121,7 +121,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         httpURLItem = add(item("", #selector(httpURLClicked)))
         httpNoticeItem = add(NSMenuItem(title: String(localized: "⚠️ 运行中：本机任何程序都能读取验证码，不用时请关闭"), action: nil, keyEquivalent: ""))
         httpNoticeItem.isEnabled = false
-        menu.addItem(item(String(localized: "修改端口..."), #selector(portClicked)))
+        menu.addItem(item(String(localized: "修改端口…"), #selector(portClicked)))
 
         menu.addItem(.separator())
         hotkeysItem = add(NSMenuItem(title: String(localized: "全局快捷键（自动填入第 1–10 条）"), action: nil, keyEquivalent: ""))
@@ -153,7 +153,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         languageItem.submenu = languageMenu
 
         menu.addItem(.separator())
-        menu.addItem(item(String(localized: "检查更新..."), #selector(checkForUpdatesClicked)))
+        menu.addItem(item(String(localized: "检查更新…"), #selector(checkForUpdatesClicked)))
         automaticUpdatesItem = add(item(String(localized: "每天自动检查更新"), #selector(automaticUpdatesClicked)))
         automaticUpdatesItem.toolTip = String(localized: "每天向 GitHub 查询一次最新版本。请求里只有 App 的版本号，不含账号信息。")
         menu.addItem(item(String(localized: "帮助"), #selector(helpClicked), key: "h"))
@@ -198,7 +198,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             accountItems.append(item)
         }
         if codes.isEmpty {
-            let empty = NSMenuItem(title: String(localized: "暂无记录，点击「添加...」"), action: nil, keyEquivalent: "")
+            let empty = NSMenuItem(title: String(localized: "暂无记录，点击「添加…」"), action: nil, keyEquivalent: "")
             empty.isEnabled = false
             menu.insertItem(empty, at: insertAt)
             accountItems.append(empty)
@@ -210,7 +210,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     @objc private func refreshCodes() {
         let codes = store.codes()
         let remaining = codes.compactMap(\.secondsRemaining).first ?? TOTP(secret: Data([0])).secondsRemaining()
-        timerItem.title = String(localized: "过期时间: \(remaining)s")
+        timerItem.title = String(localized: "\(remaining) 秒后过期")
         for (item, code) in zip(accountItems, codes) {
             item.title = "\(code.account.name): \(code.displayCode)"
         }
@@ -248,7 +248,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         updateItem.isHidden = availableUpdate == nil
         updateSeparator.isHidden = availableUpdate == nil
         if let availableUpdate {
-            updateItem.title = String(localized: "新版本 \(availableUpdate.version) 可用...")
+            updateItem.title = String(localized: "新版本 \(availableUpdate.version) 可用…")
         }
     }
 
@@ -328,7 +328,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             } else {
                 let parsed = OTPAuthList.parse(try String(contentsOf: url, encoding: .utf8))
                 entries = parsed.entries
-                if !parsed.invalidLines.isEmpty {
+                // One line and several lines are separate strings, so English gets the plural right.
+                if parsed.invalidLines.count == 1 {
+                    notes.append(String(localized: "第 \(parsed.invalidLines[0]) 行不是有效的 otpauth URL，已忽略。"))
+                } else if !parsed.invalidLines.isEmpty {
                     let lines = parsed.invalidLines.map(String.init).joined(separator: String(localized: "、"))
                     notes.append(String(localized: "第 \(lines) 行不是有效的 otpauth URL，已忽略。"))
                 }
@@ -481,9 +484,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc private func helpClicked() {
-        if let url = URL(string: "https://github.com/thatscode/GoldenPassport") {
-            NSWorkspace.shared.open(url)
-        }
+        NSWorkspace.shared.open(readmeURL())
     }
 
     @objc private func quitClicked() {

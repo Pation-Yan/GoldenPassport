@@ -36,8 +36,9 @@ cp "$ROOT/Resources/statusIcon.png" "$APP/Contents/Resources/"
 cp "$ROOT/LICENSE" "$APP/Contents/Resources/"
 
 # UI strings are written in Simplified Chinese and used as localization keys;
-# en.lproj/Localizable.strings translates them and zh-Hans.lproj maps each key to itself
-# (otherwise Chinese lookups fall through to en). Other languages fall back to en.
+# en.lproj/Localizable.strings translates them (Localizable.stringsdict those with a count)
+# and zh-Hans.lproj maps each key to itself (otherwise Chinese lookups fall through to en).
+# Other languages fall back to en.
 # The .lproj folders also matter for Bartender 7: without them AppKit ran in zh_CN
 # and the status item's Chinese AXRoleDescription made Bartender ignore it.
 for lproj in en zh-Hans; do
@@ -45,7 +46,7 @@ for lproj in en zh-Hans; do
   printf '"CFBundleName" = "%s";\n' "$APP_NAME" > "$APP/Contents/Resources/$lproj.lproj/InfoPlist.strings"
 done
 for lproj in en zh-Hans; do
-  cp "$ROOT/Resources/$lproj.lproj/Localizable.strings" "$APP/Contents/Resources/$lproj.lproj/"
+  cp "$ROOT/Resources/$lproj.lproj/"Localizable.* "$APP/Contents/Resources/$lproj.lproj/"
 done
 
 ICONSET="$BUILD_ROOT/AppIcon.iconset"

@@ -101,10 +101,10 @@ struct ManageAccountsView: View {
             // Unlike onTapGesture(count: 2) on the rows, this keeps single-click selection instant.
             .contextMenu(forSelectionType: UUID.self) { ids in
                 if let account = account(for: ids) {
-                    Button("重命名...") { editing = .name(account) }
-                    Button("修改 URL...") { editing = .url(account) }
+                    Button("重命名…") { editing = .name(account) }
+                    Button("修改 URL…") { editing = .url(account) }
                     Divider()
-                    Button("删除...") { confirmingDelete = account }
+                    Button("删除…") { confirmingDelete = account }
                 }
             } primaryAction: { ids in
                 if let account = account(for: ids) { editing = .name(account) }
@@ -112,11 +112,11 @@ struct ManageAccountsView: View {
             .frame(minHeight: 320)
 
             HStack {
-                Button("重命名...") { selectedAccount.map { editing = .name($0) } }
+                Button("重命名…") { selectedAccount.map { editing = .name($0) } }
                     .disabled(selectedIndex == nil)
-                Button("修改 URL...") { selectedAccount.map { editing = .url($0) } }
+                Button("修改 URL…") { selectedAccount.map { editing = .url($0) } }
                     .disabled(selectedIndex == nil)
-                Button("删除...") { confirmingDelete = selectedAccount }
+                Button("删除…") { confirmingDelete = selectedAccount }
                     .disabled(selectedIndex == nil)
                 Spacer()
                 Button { moveSelection(by: -1) } label: { Image(systemName: "arrow.up") }

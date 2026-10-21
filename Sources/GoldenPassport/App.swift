@@ -73,23 +73,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         activateApp()
         switch alert.runModal() {
         case .alertFirstButtonReturn:
-            NSWorkspace.shared.open(Self.dataRecoveryHelpURL)
+            NSWorkspace.shared.open(readmeURL(section: (english: "if-goldenpassport-cant-read-its-data",
+                                                        chinese: "goldenpassport-无法读取数据时")))
         case .alertSecondButtonReturn:
             NSWorkspace.shared.activateFileViewerSelecting([unreadable?.file ?? dataDirectory])
         default:
             break
         }
-    }
-
-    /// The README section on unreadable data files, in the language the UI is using.
-    private static var dataRecoveryHelpURL: URL {
-        let chinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") == true
-        var components = URLComponents(string: chinese
-            ? "https://github.com/thatscode/GoldenPassport/blob/modernize/README.zh-CN.md"
-            : "https://github.com/thatscode/GoldenPassport/blob/modernize/README.md")!
-        // URLComponents percent-encodes the fragment; URL(string:) only does that from macOS 14 on.
-        components.fragment = chinese ? "goldenpassport-无法读取数据时" : "if-goldenpassport-cant-read-its-data"
-        return components.url!
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -116,6 +106,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         main.addItem(editItem)
         return main
     }
+}
+
+/// The README on GitHub in the language the UI is using, optionally at one of its sections.
+func readmeURL(section: (english: String, chinese: String)? = nil) -> URL {
+    let chinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") == true
+    var components = URLComponents(string: chinese
+        ? "https://github.com/thatscode/GoldenPassport/blob/modernize/README.zh-CN.md"
+        : "https://github.com/thatscode/GoldenPassport/blob/modernize/README.md")!
+    // URLComponents percent-encodes the fragment; URL(string:) only does that from macOS 14 on.
+    components.fragment = section.map { chinese ? $0.chinese : $0.english }
+    return components.url!
 }
 
 func activateApp() {

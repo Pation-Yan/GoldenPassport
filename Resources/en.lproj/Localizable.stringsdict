@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- English strings that contain a count, with singular and plural forms.
+     Keys are the Simplified Chinese source strings, as in Localizable.strings. -->
+<plist version="1.0">
+<dict>
+	<key>成功导入 %lld 条记录</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@accounts@</string>
+		<key>accounts</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Imported %lld account</string>
+			<key>other</key>
+			<string>Imported %lld accounts</string>
+		</dict>
+	</dict>
+	<key>%lld 条因标识已存在而跳过。</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@accounts@</string>
+		<key>accounts</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Skipped %lld account whose name already exists.</string>
+			<key>other</key>
+			<string>Skipped %lld accounts whose names already exist.</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

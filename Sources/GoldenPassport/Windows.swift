@@ -88,7 +88,7 @@ struct AddAccountView: View {
                 Text(error).foregroundStyle(.red).font(.callout)
             }
             HStack {
-                Button("从二维码图片识别...", action: pickQRCode)
+                Button("从二维码图片识别…", action: pickQRCode)
                 Spacer()
                 Button("取消", action: onCancel).keyboardShortcut(.cancelAction)
                 Button("添加", action: add).keyboardShortcut(.defaultAction)
