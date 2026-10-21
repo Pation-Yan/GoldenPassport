@@ -74,5 +74,5 @@ body:
     attributes:
       label: Before you submit / 提交前确认
       options:
-        - label: This report contains no secrets, `otpauth://` URLs, QR codes or verification codes. / 内容里没有密钥、`otpauth://` URL、二维码或验证码。
+        - label: This report contains no secrets, otpauth:// URLs, QR codes or verification codes. / 内容里没有密钥、otpauth:// URL、二维码或验证码。
           required: true

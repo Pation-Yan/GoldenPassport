@@ -24,5 +24,5 @@ body:
     attributes:
       label: Before you submit / 提交前确认
       options:
-        - label: This request contains no secrets, `otpauth://` URLs or QR codes. / 内容里没有密钥、`otpauth://` URL 或二维码。
+        - label: This request contains no secrets, otpauth:// URLs or QR codes. / 内容里没有密钥、otpauth:// URL 或二维码。
           required: true
