@@ -12,8 +12,9 @@
 # MFA secret. It is made owner-only (chmod go-rwx); users must delete it once they
 # no longer need to roll back.
 #
+# Messages are in Simplified Chinese or English, like the app (see ui_language).
 # Environment overrides (for testing): GP_APPLICATIONS_DIR, GP_DATA_DIR,
-# GP_BACKUP_ROOT, GP_NO_LAUNCH=1.
+# GP_BACKUP_ROOT, GP_NO_LAUNCH=1, GP_LANG=zh-Hans|en.
 set -euo pipefail
 
 BUNDLE_ID="site.stanzhai.GoldenPassport"
@@ -23,19 +24,34 @@ BACKUP_ROOT="${GP_BACKUP_ROOT:-$HOME/GoldenPassport-backups}"
 TARGET="$APPS_DIR/GoldenPassport.app"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-step() { printf '\n==> %s\n' "$*"; }
-info() { printf '    %s\n' "$*"; }
-die() { printf '\n[失败] %s\n' "$*" >&2; exit 1; }
+# The app's own language setting (menu: 语言 / Language), else the system's preferred
+# languages, matched by macOS exactly as it does for the app.
+ui_language() {
+  osascript -l JavaScript -e '
+    ObjC.import("Foundation");
+    function run(argv) {
+      var languages = $.NSUserDefaults.alloc.initWithSuiteName(argv[0]).objectForKey("AppleLanguages");
+      return ObjC.unwrap($.NSBundle.preferredLocalizationsFromArrayForPreferences($(["en", "zh-Hans"]), languages).firstObject);
+    }' "$BUNDLE_ID" 2>/dev/null || echo en
+}
+UI_LANG="${GP_LANG:-$(ui_language)}"
+# say ZH EN prints the message in the UI language; a single argument is printed as is.
+say() { if [ $# -eq 1 ] || [ "$UI_LANG" = zh-Hans ]; then printf '%s' "$1"; else printf '%s' "$2"; fi; }
+plural() { if [ "$1" = 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s' "$1" "$3"; fi; }
+
+step() { printf '\n==> %s\n' "$(say "$@")"; }
+info() { printf '    %s\n' "$(say "$@")"; }
+die() { printf '\n%s %s\n' "$(say '[失败]' '[FAILED]')" "$(say "$@")" >&2; exit 1; }
 
 plist_value() { /usr/libexec/PlistBuddy -c "Print :$2" "$1/Contents/Info.plist" 2>/dev/null || true; }
 
 describe_app() {
   local app="$1"
-  [ -d "$app" ] || { echo "未安装"; return; }
+  [ -d "$app" ] || { say "未安装" "not installed"; return; }
   if [ -n "$(plist_value "$app" GPDataDirectoryName)" ]; then
     echo "$(plist_value "$app" CFBundleShortVersionString) (build $(plist_value "$app" CFBundleVersion))"
   else
-    echo "0.1.x 旧版"
+    say "0.1.x 旧版" "0.1.x"
   fi
 }
 
@@ -44,7 +60,7 @@ quit_app() {
   local app="$1" pids i
   pids="$(pgrep -f "^$app/Contents/MacOS/" || true)"
   [ -n "$pids" ] || return 0
-  info "正在退出运行中的 GoldenPassport (pid $(echo $pids))"
+  info "正在退出运行中的 GoldenPassport (pid $(echo $pids))" "Quitting the running GoldenPassport (pid $(echo $pids))"
   kill -TERM $pids 2>/dev/null || true
   for i in 1 2 3 4 5 6 7 8 9 10; do
     pgrep -f "^$app/Contents/MacOS/" >/dev/null || return 0
@@ -57,7 +73,7 @@ quit_app() {
 checksum() { [ -f "$1" ] && shasum -a 256 "$1" | awk '{print $1}' || echo "none"; }
 
 # --- 1. Package -------------------------------------------------------------
-step "检查安装包"
+step "检查安装包" "Checking the package"
 SOURCE="${1:-$SCRIPT_DIR/GoldenPassport.app}"
 WORK="$(mktemp -d -t gp-install)"
 trap 'rm -rf "$WORK"' EXIT
@@ -65,30 +81,36 @@ case "$SOURCE" in
   *.zip)
     ditto -x -k "$SOURCE" "$WORK/unzipped"
     SOURCE="$(find "$WORK/unzipped" -maxdepth 2 -name GoldenPassport.app -type d | head -n 1)"
-    [ -n "$SOURCE" ] || die "压缩包里没有 GoldenPassport.app" ;;
+    [ -n "$SOURCE" ] || die "压缩包里没有 GoldenPassport.app" "The zip file has no GoldenPassport.app in it" ;;
 esac
-[ -d "$SOURCE" ] || die "找不到安装包：$SOURCE"
+[ -d "$SOURCE" ] || die "找不到安装包：$SOURCE" "Package not found: $SOURCE"
 SOURCE="$(cd "$SOURCE" && pwd)"
-[ "$SOURCE" != "$TARGET" ] || die "安装包就是已安装的 App，请指定新下载的 GoldenPassport.app"
+[ "$SOURCE" != "$TARGET" ] || die "安装包就是已安装的 App，请指定新下载的 GoldenPassport.app" \
+  "That is the installed app itself. Point to the GoldenPassport.app you downloaded"
 
-[ "$(plist_value "$SOURCE" CFBundleIdentifier)" = "$BUNDLE_ID" ] || die "不是 GoldenPassport 正式版安装包（Bundle ID 不符）"
-[ -n "$(plist_value "$SOURCE" GPDataDirectoryName)" ] || die "这是 0.1.x 旧版安装包，回退请用 rollback.sh"
-codesign --verify --strict "$SOURCE" 2>/dev/null || die "安装包签名校验失败，可能已损坏，请重新下载"
+[ "$(plist_value "$SOURCE" CFBundleIdentifier)" = "$BUNDLE_ID" ] \
+  || die "不是 GoldenPassport 正式版安装包（Bundle ID 不符）" "Not a GoldenPassport release package (wrong bundle ID)"
+[ -n "$(plist_value "$SOURCE" GPDataDirectoryName)" ] \
+  || die "这是 0.1.x 旧版安装包，回退请用 rollback.sh" "This is a 0.1.x package. To go back to 0.1.x, use rollback.sh"
+codesign --verify --strict "$SOURCE" 2>/dev/null \
+  || die "安装包签名校验失败，可能已损坏，请重新下载" "The package's signature does not verify. It may be damaged; download it again"
 
 MACOS_MAJOR="$(sw_vers -productVersion | cut -d. -f1)"
-[ "$MACOS_MAJOR" -ge 13 ] || die "需要 macOS 13 或更高版本，当前是 $(sw_vers -productVersion)"
+[ "$MACOS_MAJOR" -ge 13 ] || die "需要 macOS 13 或更高版本，当前是 $(sw_vers -productVersion)" \
+  "macOS 13 or later is required; this Mac has $(sw_vers -productVersion)"
 ARCH="$(uname -m)"
 lipo -archs "$SOURCE/Contents/MacOS/GoldenPassport" | tr ' ' '\n' | grep -qx "$ARCH" \
-  || die "安装包不支持这台 Mac 的架构 ($ARCH)，请使用通用版 (Universal) 安装包"
+  || die "安装包不支持这台 Mac 的架构 ($ARCH)，请使用通用版 (Universal) 安装包" \
+    "The package does not support this Mac's architecture ($ARCH). Use the universal package"
 
 NEW_VERSION="$(describe_app "$SOURCE")"
 OLD_VERSION="$(describe_app "$TARGET")"
-info "新版本：$NEW_VERSION"
-info "当前已安装：$OLD_VERSION"
-info "数据目录：$DATA_DIR"
+info "新版本：$NEW_VERSION" "New version: $NEW_VERSION"
+info "当前已安装：$OLD_VERSION" "Installed now: $OLD_VERSION"
+info "数据目录：$DATA_DIR" "Data folder: $DATA_DIR"
 
 # --- 2. Backup --------------------------------------------------------------
-step "备份当前的 App 和数据"
+step "备份当前的 App 和数据" "Backing up the current app and data"
 BACKUP="$BACKUP_ROOT/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP"
 chmod 700 "$BACKUP_ROOT" "$BACKUP"
@@ -99,10 +121,11 @@ if [ -d "$TARGET" ]; then
 fi
 if [ -d "$DATA_DIR" ]; then
   ditto "$DATA_DIR" "$BACKUP/data"
-  info "数据 → $BACKUP/data"
+  info "数据 → $BACKUP/data" "Data → $BACKUP/data"
 fi
 chmod -R go-rwx "$BACKUP"
-info "⚠️  备份里有你全部 MFA 密钥的未加密副本（权限：仅本人可读）"
+info "⚠️  备份里有你全部 MFA 密钥的未加密副本（权限：仅本人可读）" \
+  "⚠️  The backup holds an unencrypted copy of all your MFA secrets (readable only by you)"
 {
   echo "date=$(date '+%Y-%m-%d %H:%M:%S')"
   echo "previous_version=$OLD_VERSION"
@@ -115,7 +138,7 @@ info "⚠️  备份里有你全部 MFA 密钥的未加密副本（权限：仅�
 } > "$BACKUP/manifest.txt"
 
 restore_previous() {
-  printf '\n==> 正在恢复安装前的状态\n'
+  step "正在恢复安装前的状态" "Restoring the state before the install"
   quit_app "$TARGET"
   rm -rf "$TARGET"
   if [ -f "$BACKUP/GoldenPassport.app.zip" ]; then
@@ -125,22 +148,23 @@ restore_previous() {
   if [ -d "$BACKUP/data" ]; then
     ditto "$BACKUP/data" "$DATA_DIR"
   fi
-  info "已恢复。备份保留在 $BACKUP"
+  info "已恢复。备份保留在 $BACKUP" "Restored. The backup stays in $BACKUP"
 }
 
 # --- 3. Replace -------------------------------------------------------------
-step "安装新版本"
+step "安装新版本" "Installing the new version"
 quit_app "$TARGET"
 STAGED="$APPS_DIR/.GoldenPassport.app.installing"
 rm -rf "$STAGED"
-ditto "$SOURCE" "$STAGED" || die "无法写入 ${APPS_DIR}，请确认当前账号有管理员权限"
+ditto "$SOURCE" "$STAGED" || die "无法写入 ${APPS_DIR}，请确认当前账号有管理员权限" \
+  "Cannot write to ${APPS_DIR}. Make sure your macOS account is an administrator"
 xattr -dr com.apple.quarantine "$STAGED" 2>/dev/null || true
 rm -rf "$TARGET"
 mv "$STAGED" "$TARGET"
-info "已安装到 $TARGET"
+info "已安装到 $TARGET" "Installed to $TARGET"
 
 # --- 4. Migrate & verify ----------------------------------------------------
-step "迁移并核对数据"
+step "迁移并核对数据" "Migrating and checking your data"
 set +e
 REPORT="$("$TARGET/Contents/MacOS/GoldenPassport" --migrate-data --data-dir "$DATA_DIR" 2>&1)"
 STATUS=$?
@@ -149,23 +173,28 @@ report_value() { printf '%s\n' "$REPORT" | sed -n "s/^$1=//p" | head -n 1; }
 if [ $STATUS -ne 0 ]; then
   printf '%s\n' "$REPORT" | sed 's/^/    /'
   restore_previous
-  die "数据核对没有通过，已自动恢复到安装前的状态。请把上面的输出发给维护者。"
+  die "数据核对没有通过，已自动恢复到安装前的状态。请到 https://github.com/thatscode/GoldenPassport/issues 反馈，并附上上面的输出（里面只有账号名称，没有密钥）。" \
+    "The data check failed, so the previous state was restored. Please report this at https://github.com/thatscode/GoldenPassport/issues and include the output above (it shows account names only, no secrets)."
 fi
+ACCOUNTS="$(report_value account_count)"
 case "$(report_value status)" in
-  migrated) info "已从旧版迁移 $(report_value account_count) 条记录，与 gp.secrets 的 $(report_value legacy_count) 条逐条一致" ;;
-  already-migrated) info "沿用已有数据：$(report_value account_count) 条记录" ;;
-  no-data) info "没有发现旧数据，这是一次全新安装" ;;
+  migrated) info "已从旧版迁移 $ACCOUNTS 条记录，与 gp.secrets 的 $(report_value legacy_count) 条逐条一致" \
+    "Migrated $(plural "$ACCOUNTS" account accounts) from 0.1.x; every entry matches gp.secrets" ;;
+  already-migrated) info "沿用已有数据：$ACCOUNTS 条记录" "Keeping your existing data: $(plural "$ACCOUNTS" account accounts)" ;;
+  no-data) info "没有发现旧数据，这是一次全新安装" "No existing data found; this is a fresh install" ;;
 esac
 [ "$(checksum "$DATA_DIR/gp.secrets")" = "$(sed -n 's/^gp_secrets_sha256=//p' "$BACKUP/manifest.txt")" ] \
-  || { restore_previous; die "gp.secrets 在安装过程中发生了变化，已自动恢复"; }
-[ -f "$DATA_DIR/gp.secrets" ] && info "旧版数据文件 gp.secrets 未被改动，可随时回退"
+  || { restore_previous; die "gp.secrets 在安装过程中发生了变化，已自动恢复" "gp.secrets changed during the install, so the previous state was restored"; }
+[ -f "$DATA_DIR/gp.secrets" ] && info "旧版数据文件 gp.secrets 未被改动，可随时回退" \
+  "The 0.1.x data file gp.secrets is unchanged, so you can roll back at any time"
 
 # --- 5. Launch --------------------------------------------------------------
 if [ "${GP_NO_LAUNCH:-0}" != "1" ]; then
-  step "启动 GoldenPassport"
+  step "启动 GoldenPassport" "Starting GoldenPassport"
   open "$TARGET"
 fi
 
+if [ "$UI_LANG" = zh-Hans ]; then
 cat <<EOF
 
 安装完成：$OLD_VERSION → $NEW_VERSION
@@ -187,3 +216,29 @@ cat <<EOF
       bash "$SCRIPT_DIR/cleanup.sh"
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 EOF
+else
+cat <<EOF
+
+Installed: $OLD_VERSION → $NEW_VERSION
+
+Good to know
+  • Global hotkeys now default to ⌃⌥⌘0–9 (0.1.x used ⇧⌘0–9); change them under Global Hotkeys in the menu.
+  • To have hotkeys type the code for you, grant Accessibility again:
+    System Settings → Privacy & Security → Accessibility. If GoldenPassport is already listed
+    but typing doesn't work, remove it with "−" and pick a hotkey option in the menu again.
+  • To go back to the version you had before: bash "$SCRIPT_DIR/rollback.sh"
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ⚠️  IMPORTANT: the backup holds an unencrypted copy of all your MFA secrets
+      $BACKUP
+  • Anyone who gets this folder can generate codes for all your accounts.
+  • Don't copy, upload or send it to anyone, and keep it out of iCloud and
+    other synced folders.
+  • The 0.1.x data file gp.secrets also stays in the data folder (for rolling
+    back), including accounts you delete later in the new version.
+  • Once the new version works for you and you no longer need to roll back,
+    delete both with the cleanup script:
+      bash "$SCRIPT_DIR/cleanup.sh"
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EOF
+fi
