@@ -3,9 +3,10 @@
 #
 #   bash rollback.sh [--restore-data] [backup-dir]
 #
-# By default only the app is restored: 0.2.x never writes gp.secrets, so the old
-# app finds its data unchanged. --restore-data also resets the whole data
-# directory to its pre-install state, discarding changes made in 0.2.x.
+# By default only the app is restored and the data stays as it is: 0.2.x never
+# writes the gp.secrets that 0.1.x reads, and an earlier 0.2.x build reads the same
+# accounts.json. --restore-data also resets the whole data directory to its
+# pre-install state, discarding changes made since the install.
 #
 # Messages are in Simplified Chinese or English, like the app (see ui_language).
 # Environment overrides (for testing): GP_BACKUP_ROOT, GP_NO_LAUNCH=1, GP_LANG=zh-Hans|en.
@@ -31,16 +32,18 @@ say() { if [ $# -eq 1 ] || [ "$UI_LANG" = zh-Hans ]; then printf '%s' "$1"; else
 usage() {
   say "用法：bash rollback.sh [--restore-data] [备份目录]
 
-恢复 install.sh 替换掉的 GoldenPassport。默认只恢复 App：0.2.x 从不写入 gp.secrets，
-旧版看到的数据和安装前一样。加上 --restore-data 会把整个数据目录也恢复到安装前，
-在 0.2.x 里做的改动会丢失。不指定备份目录时，使用 $BACKUP_ROOT 里最新的一份。
+恢复 install.sh 替换掉的 GoldenPassport。默认只恢复 App，数据保持不变：0.1.x 读取的
+gp.secrets 从未被 0.2.x 改动过，更早的 0.2.x 版本读取的是同一个 accounts.json。
+加上 --restore-data 会把整个数据目录也恢复到安装前，安装之后做的改动会丢失。
+不指定备份目录时，使用 $BACKUP_ROOT 里最新的一份。
 " "Usage: bash rollback.sh [--restore-data] [backup-folder]
 
 Restores the GoldenPassport app that install.sh replaced. By default only the app
-is restored: 0.2.x never writes gp.secrets, so the old app finds its data as it
-was. --restore-data also resets the whole data folder to its state before the
-install, discarding changes made in 0.2.x. Without a backup folder, the newest one
-in $BACKUP_ROOT is used.
+is restored and your data stays as it is: 0.2.x never writes the gp.secrets that
+0.1.x reads, and an earlier 0.2.x build reads the same accounts.json.
+--restore-data also resets the whole data folder to its state before the install,
+discarding changes made since then. Without a backup folder, the newest one in
+$BACKUP_ROOT is used.
 "
 }
 
@@ -78,8 +81,8 @@ info "备份：${BACKUP}（$(manifest date)）" "Backup: $BACKUP ($(manifest dat
 info "当前：$(manifest installed_version) → 回退到：$(manifest previous_version)" \
   "Now: $(manifest installed_version) → going back to: $(manifest previous_version)"
 if [ $RESTORE_DATA = 1 ]; then
-  info "数据：整个数据目录恢复到安装前（0.2.x 中的改动会丢失）" \
-    "Data: the whole data folder goes back to its state before the install (changes made in 0.2.x are lost)"
+  info "数据：整个数据目录恢复到安装前（安装之后做的改动会丢失）" \
+    "Data: the whole data folder goes back to its state before the install (changes made since then are lost)"
 else
   info "数据：保持不变" "Data: left as it is"
 fi
@@ -105,10 +108,24 @@ else
 fi
 
 step "检查数据" "Checking data"
+# What the restored app reads: 0.1.x its gp.secrets, any 0.2.x build the same accounts.json.
+RESTORED=none
+if [ -d "$TARGET" ]; then
+  if /usr/libexec/PlistBuddy -c "Print :GPDataDirectoryName" "$TARGET/Contents/Info.plist" >/dev/null 2>&1; then
+    RESTORED=0.2
+  else
+    RESTORED=0.1
+  fi
+fi
 if [ $RESTORE_DATA = 1 ]; then
   rm -rf "$DATA_DIR"
   [ -d "$BACKUP/data" ] && ditto "$BACKUP/data" "$DATA_DIR"
   info "数据目录已恢复到安装前" "The data folder is back to its state before the install"
+elif [ $RESTORED = 0.2 ]; then
+  info "数据保持不变：恢复的版本使用同一个 accounts.json，所有记录都在" \
+    "Your data is unchanged: the restored version uses the same accounts.json, so all your accounts are there"
+elif [ $RESTORED = none ]; then
+  info "数据目录保持不变，再次安装时会继续使用" "The data folder is left as it is and is used again if you reinstall"
 elif [ "$(checksum "$DATA_DIR/gp.secrets")" = "$(manifest gp_secrets_sha256)" ]; then
   info "gp.secrets 与备份一致，旧版能看到原来的全部记录" "gp.secrets matches the backup, so 0.1.x finds all its accounts"
 else
@@ -116,7 +133,7 @@ else
     "[WARNING] gp.secrets differs from the backup; restoring it from the backup"
   cp -p "$BACKUP/data/gp.secrets" "$DATA_DIR/gp.secrets"
 fi
-if [ $RESTORE_DATA = 0 ] && [ -f "$DATA_DIR/accounts.json" ]; then
+if [ $RESTORE_DATA = 0 ] && [ $RESTORED = 0.1 ] && [ -f "$DATA_DIR/accounts.json" ]; then
   info "新版的 accounts.json 仍保留在数据目录里，旧版不会读取它；再次安装新版时会继续使用。" \
     "The new version's accounts.json stays in the data folder. 0.1.x doesn't read it; the new version uses it again when you reinstall."
   info "在新版里新增或修改的记录，旧版看不到。需要的话，先在新版菜单里导出 .secrets，再导入旧版。" \

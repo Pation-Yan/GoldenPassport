@@ -198,7 +198,8 @@ Run `bash rollback.sh` from the same folder. It restores the app that was instal
 original `gp.secrets` was never modified, so 0.1.x finds all its accounts. Accounts you added
 or changed in 0.2.0 are not visible to 0.1.x. To keep them, first export a `.secrets` backup
 from 0.2.0 and import it into 0.1.x. `bash rollback.sh --restore-data` also resets the data
-directory to its pre-install state.
+directory to its pre-install state. After an upgrade from an earlier 0.2.x build, `rollback.sh`
+restores that build instead; it uses the same `accounts.json`, so all your accounts stay as they are.
 
 Accounts you add or change in 0.1.x after rolling back are not lost when you upgrade again:
 GoldenPassport lists what 0.1.x added, changed or deleted and lets you choose which accounts to
