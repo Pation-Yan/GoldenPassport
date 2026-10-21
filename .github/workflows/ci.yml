@@ -64,6 +64,28 @@ jobs:
           if grep '/\._' "$RUNNER_TEMP/zip-list.txt"; then echo "::error::package contains AppleDouble ._ files"; exit 1; fi
           unzip -q "$ZIP" -d "$RUNNER_TEMP/unzipped"
           codesign --verify --strict "$RUNNER_TEMP"/unzipped/*/GoldenPassport.app
+      - name: Install from the package
+        run: |
+          export GP_APPLICATIONS_DIR="$RUNNER_TEMP/apps" GP_DATA_DIR="$RUNNER_TEMP/install-data" \
+            GP_BACKUP_ROOT="$RUNNER_TEMP/backups" GP_NO_LAUNCH=1 GP_LANG=en
+          mkdir -p "$GP_APPLICATIONS_DIR"
+          PACKAGE="$(ls -d "$RUNNER_TEMP"/unzipped/*/)"
+          bash "$PACKAGE/install.sh"
+          FIRST="$(ls -d "$GP_BACKUP_ROOT"/*/)"
+          MANIFEST="$(shasum "$FIRST/manifest.txt")"
+          # A second install in the same second must not reuse, and overwrite, that backup.
+          mkdir "$RUNNER_TEMP/clock"
+          printf '#!/bin/bash\n[ "$1" = "+%%Y%%m%%d-%%H%%M%%S" ] && exec echo %s\nexec /bin/date "$@"\n' \
+            "$(basename "$FIRST")" > "$RUNNER_TEMP/clock/date"
+          chmod +x "$RUNNER_TEMP/clock/date"
+          if PATH="$RUNNER_TEMP/clock:$PATH" bash "$PACKAGE/install.sh" > "$RUNNER_TEMP/second.log" 2>&1; then
+            cat "$RUNNER_TEMP/second.log"; echo "::error::install.sh reused an existing backup folder"; exit 1
+          fi
+          grep -q 'Could not create a new backup folder' "$RUNNER_TEMP/second.log" || { cat "$RUNNER_TEMP/second.log"; exit 1; }
+          test "$(shasum "$FIRST/manifest.txt")" = "$MANIFEST"
+          # With the real clock, the next install gets a backup folder of its own.
+          bash "$PACKAGE/install.sh"
+          test "$(ls -d "$GP_BACKUP_ROOT"/*/ | wc -l | tr -d ' ')" -eq 2
       - uses: actions/upload-artifact@v7
         with:
           name: GoldenPassport-beta

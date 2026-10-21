@@ -111,8 +111,18 @@ info "数据目录：$DATA_DIR" "Data folder: $DATA_DIR"
 
 # --- 2. Backup --------------------------------------------------------------
 step "备份当前的 App 和数据" "Backing up the current app and data"
-BACKUP="$BACKUP_ROOT/$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$BACKUP"
+# A new folder for every run, named by the time so rollback.sh can pick the newest. mkdir
+# without -p fails if the folder exists, so a second run in the same second waits for the
+# next one instead of writing over the first run's backup.
+mkdir -p "$BACKUP_ROOT" 2>/dev/null || true
+BACKUP=""
+for attempt in 1 2 3; do
+  candidate="$BACKUP_ROOT/$(date +%Y%m%d-%H%M%S)"
+  if mkdir "$candidate" 2>/dev/null; then BACKUP="$candidate"; break; fi
+  sleep 1
+done
+[ -n "$BACKUP" ] || die "无法在 ${BACKUP_ROOT} 里新建备份目录，没有做任何改动" \
+  "Could not create a new backup folder in $BACKUP_ROOT. Nothing was changed"
 chmod 700 "$BACKUP_ROOT" "$BACKUP"
 if [ -d "$TARGET" ]; then
   # A zip, not a second .app: two bundles with the same id confuse Launch Services.
