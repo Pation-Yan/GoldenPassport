@@ -1,0 +1,78 @@
+name: Bug report / 报告问题
+description: Something doesn't work as expected / 有功能不正常
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### ⚠️ This page is public. Never post secrets.
+        No `otpauth://` URLs, QR codes, secret keys or verification codes, and no files from the data folder or `~/GoldenPassport-backups/`. Use made-up accounts in examples.
+
+        ### ⚠️ 这个页面是公开的，不要贴任何密钥。
+        不要贴 `otpauth://` URL、二维码、密钥或验证码，也不要上传数据目录或 `~/GoldenPassport-backups/` 里的文件。举例时请用虚构的账号。
+
+        Security problems: please [report them privately](https://github.com/thatscode/GoldenPassport/security/advisories/new) instead. 安全问题请[私下报告](https://github.com/thatscode/GoldenPassport/security/advisories/new)。
+  - type: input
+    id: version
+    attributes:
+      label: GoldenPassport version / 版本
+      description: "Shown after **Check for Updates…** in the menu, or in Finder: select GoldenPassport in Applications, then Get Info (⌘I). / 点菜单里的「检查更新…」后会显示；也可以在 Finder 的「应用程序」里选中 GoldenPassport，按 ⌘I「显示简介」。"
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version / macOS 版本
+      description: Apple menu → About This Mac / 苹果菜单 →「关于本机」
+      placeholder: "macOS 15.6"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How was it installed? / 安装方式
+      options:
+        - install.sh from a release or beta package / 安装包里的 install.sh
+        - Built from source / 从源码构建
+        - Other / 其他
+    validations:
+      required: true
+  - type: dropdown
+    id: upgraded
+    attributes:
+      label: Upgraded from 0.1.x? / 是否从 0.1.x 升级
+      options:
+        - Yes / 是
+        - No, a fresh install / 否，全新安装
+        - Not sure / 不确定
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened? / 发生了什么
+      description: What you did, what you expected, and what happened instead. / 你做了什么、期望看到什么、实际看到了什么。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      placeholder: |
+        1.
+        2.
+        3.
+  - type: textarea
+    id: output
+    attributes:
+      label: Alert text or terminal output / 提示信息或终端输出
+      description: "The scripts print account names only, never secrets. Account names may contain your email address; replace it if you like. / 脚本的输出只有账号名称，不含密钥。账号名称里可能有你的邮箱，可以先替换掉。"
+      render: text
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you submit / 提交前确认
+      options:
+        - label: This report contains no secrets, `otpauth://` URLs, QR codes or verification codes. / 内容里没有密钥、`otpauth://` URL、二维码或验证码。
+          required: true

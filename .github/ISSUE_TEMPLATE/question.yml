@@ -1,0 +1,29 @@
+name: Question / 提问
+description: Ask how to do something / 询问使用方法
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **⚠️ This page is public. Never post secrets**, such as `otpauth://` URLs, QR codes or secret keys.
+        **⚠️ 这个页面是公开的，不要贴任何密钥**，例如 `otpauth://` URL、二维码或密钥。
+
+        The [README](https://github.com/thatscode/GoldenPassport#readme) covers installing, upgrading, rolling back and the HTTP API. 安装、升级、回退和 HTTP 接口的用法见[说明文档](https://github.com/thatscode/GoldenPassport/blob/modernize/README.zh-CN.md)。
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question / 你的问题
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: GoldenPassport and macOS versions / GoldenPassport 和 macOS 的版本
+      placeholder: "GoldenPassport 0.2.0, macOS 15.6"
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you submit / 提交前确认
+      options:
+        - label: This question contains no secrets, `otpauth://` URLs or QR codes. / 内容里没有密钥、`otpauth://` URL 或二维码。
+          required: true

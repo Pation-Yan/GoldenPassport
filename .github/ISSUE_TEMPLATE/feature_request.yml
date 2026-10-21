@@ -1,0 +1,28 @@
+name: Feature request / 功能建议
+description: Suggest a new feature or an improvement / 提出新功能或改进建议
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **⚠️ This page is public. Never post secrets**, such as `otpauth://` URLs, QR codes or secret keys.
+        **⚠️ 这个页面是公开的，不要贴任何密钥**，例如 `otpauth://` URL、二维码或密钥。
+  - type: textarea
+    id: request
+    attributes:
+      label: What would you like? / 你希望有什么功能
+      description: What you are trying to do, and what gets in the way today. / 你想做什么，现在哪里不方便。
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else? / 其他补充
+      description: Alternatives you have tried, other apps that do this well, and so on. / 你试过的其他办法、做得好的其他软件等。
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you submit / 提交前确认
+      options:
+        - label: This request contains no secrets, `otpauth://` URLs or QR codes. / 内容里没有密钥、`otpauth://` URL 或二维码。
+          required: true
