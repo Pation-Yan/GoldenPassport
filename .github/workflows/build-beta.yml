@@ -1,0 +1,19 @@
+name: Build Beta
+on:
+  workflow_dispatch: # ✅ 可以网页上手动点 Run workflow
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize
+      - name: Install make
+        run: brew install make
+      - name: Build beta (no sign)
+        run: make beta CODE_SIGN_IDENTITY="-"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GoldenPassport-beta
+          path: build/beta/
