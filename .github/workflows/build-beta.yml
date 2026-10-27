@@ -12,16 +12,17 @@ jobs:
       - name: Install make
         run: brew install make
 
-      - name: Run make beta
-        run: make beta CODE_SIGN_IDENTITY="-"
+      - name: Run official make beta (follow README)
+        run: |
+          export CODE_SIGN_IDENTITY="-"
+          export BUILD_ROOT="${GITHUB_WORKSPACE}/build-output"
+          make beta
 
-      # 打印所有目录，用来排查
-      - name: List all files
-        run: ls -R
+      - name: List built output
+        run: ls -laR ./build-output
 
-      # 自动找 app
-      - name: Upload app
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: GoldenPassport-beta
-          path: '**/GoldenPassport.app'
+          path: ./build-output
